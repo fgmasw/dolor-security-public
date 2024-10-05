@@ -7,7 +7,7 @@ COMMIT_MESSAGE="Update with changes $(date +'%Y-%m-%d %H:%M')"
 
 # Prompt the user to save all changes in the IDE
 read -p "Have you saved all your changes in the IDE? (yes/no): " response
-if [ "$response" != "yes" ]; then
+if [[ ! "$response" =~ ^(yes|y|Y)$ ]]; then
     echo "Please save all your changes in the IDE before running the script."
     exit 1
 fi
@@ -22,12 +22,17 @@ fi
 
 # Create an initial README file if it doesn't exist
 if [ ! -f "README.md" ]; then
-    echo "# Actividad-2" >> README.md
+    echo "# dolor-security" >> README.md
     git add README.md
     git commit -m "first commit"
 fi
 
-# Create the main branch if not already on it
+# Ensure at least one commit exists before renaming branch
+if [ -z "$(git rev-parse --verify HEAD 2>/dev/null)" ]; then
+    git commit --allow-empty -m "Initial commit"
+fi
+
+# Rename the current branch to 'main'
 git branch -M main
 
 # Add the remote repository if not already added
@@ -37,12 +42,13 @@ else
     git remote set-url origin "$REMOTE_REPO_URL"
 fi
 
-# Check for unstaged changes and avoid pulling
-if [ -n "$(git status --porcelain)" ]; then
-    echo "You have unstaged changes. Proceeding to commit and push without pulling."
+# Fetch and merge changes from the remote repository if it exists
+git fetch origin main
+if [ $? -eq 0 ]; then
+    git merge origin/main --allow-unrelated-histories
 fi
 
-# Add all files to the staging area
+# Add all files to the staging area, respecting .gitignore
 git add .
 
 # Commit the changes with a message
