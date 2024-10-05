@@ -1,0 +1,1541 @@
+¡Hola! Voy a entregarte varios archivos con el código de mi aplicación web.
+
+
+Código para los archivos en el directorio ./routes y sus subdirectorios:
+---------------------------
+* Código para ./routes/console.php:
+<?php
+
+use Illuminate\Foundation\Inspiring;
+use Illuminate\Support\Facades\Artisan;
+
+Artisan::command('inspire', function () {
+    $this->comment(Inspiring::quote());
+})->purpose('Display an inspiring quote')->hourly();
+
+
+
+---------------------------
+* Código para ./routes/auth.php:
+<?php
+
+use App\Http\Controllers\Auth\AuthenticatedSessionController;
+use App\Http\Controllers\Auth\ConfirmablePasswordController;
+use App\Http\Controllers\Auth\EmailVerificationNotificationController;
+use App\Http\Controllers\Auth\EmailVerificationPromptController;
+use App\Http\Controllers\Auth\NewPasswordController;
+use App\Http\Controllers\Auth\PasswordController;
+use App\Http\Controllers\Auth\PasswordResetLinkController;
+use App\Http\Controllers\Auth\RegisteredUserController;
+use App\Http\Controllers\Auth\VerifyEmailController;
+use Illuminate\Support\Facades\Route;
+
+Route::middleware('guest')->group(function () {
+    Route::get('register', [RegisteredUserController::class, 'create'])
+        ->name('register');
+
+    Route::post('register', [RegisteredUserController::class, 'store']);
+
+    Route::get('login', [AuthenticatedSessionController::class, 'create'])
+        ->name('login');
+
+    Route::post('login', [AuthenticatedSessionController::class, 'store']);
+
+    Route::get('forgot-password', [PasswordResetLinkController::class, 'create'])
+        ->name('password.request');
+
+    Route::post('forgot-password', [PasswordResetLinkController::class, 'store'])
+        ->name('password.email');
+
+    Route::get('reset-password/{token}', [NewPasswordController::class, 'create'])
+        ->name('password.reset');
+
+    Route::post('reset-password', [NewPasswordController::class, 'store'])
+        ->name('password.store');
+});
+
+Route::middleware('auth')->group(function () {
+    Route::get('verify-email', EmailVerificationPromptController::class)
+        ->name('verification.notice');
+
+    Route::get('verify-email/{id}/{hash}', VerifyEmailController::class)
+        ->middleware(['signed', 'throttle:6,1'])
+        ->name('verification.verify');
+
+    Route::post('email/verification-notification', [EmailVerificationNotificationController::class, 'store'])
+        ->middleware('throttle:6,1')
+        ->name('verification.send');
+
+    Route::get('confirm-password', [ConfirmablePasswordController::class, 'show'])
+        ->name('password.confirm');
+
+    Route::post('confirm-password', [ConfirmablePasswordController::class, 'store']);
+
+    Route::put('password', [PasswordController::class, 'update'])->name('password.update');
+
+    Route::post('logout', [AuthenticatedSessionController::class, 'destroy'])
+        ->name('logout');
+});
+
+
+
+---------------------------
+* Código para ./routes/web.php:
+<?php
+
+use App\Http\Controllers\ProfileController;
+use App\Http\Controllers\PacienteController;
+use Illuminate\Support\Facades\Route;
+
+// Ruta de bienvenida
+Route::get('/', function () {
+    return view('welcome');
+});
+
+// Ruta del dashboard (panel de control)
+Route::get('/dashboard', function () {
+    return view('dashboard');
+})->middleware(['auth', 'verified'])->name('dashboard');
+
+// Rutas protegidas con middleware 'auth'
+Route::middleware(['auth'])->group(function () {
+    // Rutas de perfil de usuario (ya existentes)
+    Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
+    Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
+    Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
+
+    // Rutas de pacientes
+    // Ruta para obtener los pacientes eliminados (soft deleted)
+    Route::get('pacientes/trashed', [PacienteController::class, 'trashed'])->name('pacientes.trashed');
+
+    // Rutas para los recursos de pacientes
+    Route::resource('pacientes', PacienteController::class);
+
+    // Ruta para terminar el tratamiento de un paciente
+    Route::put('pacientes/{id}/terminar-tratamiento', [PacienteController::class, 'terminarTratamiento'])->name('pacientes.terminarTratamiento');
+
+    // Ruta para restaurar un paciente eliminado
+    Route::patch('pacientes/{id}/restore', [PacienteController::class, 'restore'])->name('pacientes.restore');
+
+    // Ruta para eliminar permanentemente un paciente
+    Route::delete('pacientes/{id}/force-delete', [PacienteController::class, 'forceDelete'])->name('pacientes.forceDelete');
+});
+
+require __DIR__.'/auth.php';
+
+
+
+Código para los archivos en el directorio ./database y sus subdirectorios:
+---------------------------
+* Código para ./database/seeders/PacienteSeeder.php:
+<?php
+
+namespace Database\Seeders;
+
+use Illuminate\Database\Seeder;
+use App\Models\Paciente;
+
+class PacienteSeeder extends Seeder
+{
+    public function run()
+    {
+        Paciente::factory()->count(50)->create(); // Crear 50 registros de pacientes
+    }
+}
+
+
+
+---------------------------
+* Código para ./database/seeders/DatabaseSeeder.php:
+<?php
+
+namespace Database\Seeders;
+
+use App\Models\User;
+// use Illuminate\Database\Console\Seeds\WithoutModelEvents;
+use Illuminate\Database\Seeder;
+
+class DatabaseSeeder extends Seeder
+{
+    /**
+     * Seed the application's database.
+     */
+    public function run(): void
+    {
+        $this->call([
+            PacienteSeeder::class,
+        ]);
+        // User::factory(10)->create();
+
+        // User::factory()->create([
+        //     'name' => 'Test User',
+        //     'email' => 'test@example.com',
+        // ]);
+    }
+}
+
+
+
+---------------------------
+* Código para ./database/factories/PacienteFactory.php:
+<?php
+
+namespace Database\Factories;
+
+use Illuminate\Database\Eloquent\Factories\Factory;
+
+class PacienteFactory extends Factory
+{
+    protected $model = \App\Models\Paciente::class;
+
+    public function definition()
+    {
+        return [
+            'rol' => $this->faker->unique()->word,
+            'nombre' => $this->faker->name,
+            'edad' => $this->faker->numberBetween(1, 100),
+            'rut' => $this->faker->unique()->numerify('########-#'),
+            'prevision' => $this->faker->word,
+            'cama_hospitalizacion' => $this->faker->randomElement(['A1', 'B2', 'C3']),
+            'diagnostico' => $this->faker->sentence,
+            'cirujano' => $this->faker->name,
+            'cirugia' => $this->faker->word,
+            'tratamiento_modalidad' => $this->faker->word,
+            'tratamiento_medicamento' => $this->faker->word,
+            'tipo_bloqueo' => $this->faker->word,
+            'factores_riesgo' => [
+                'DM' => $this->faker->randomElement(['Sí', 'No']),
+                'Inmunodeprimido' => $this->faker->randomElement(['Sí', 'No']),
+                'Uso corticoides crónico' => $this->faker->randomElement(['Sí', 'No']),
+                'Hiperglicemia >200ug/dL preoperatoria' => $this->faker->randomElement(['Sí', 'No']),
+                'Hospitalización en UCI durante la hospitalización actual' => $this->faker->randomElement(['Sí', 'No']),
+            ],
+        ];
+    }
+}
+
+
+
+---------------------------
+* Código para ./database/factories/UserFactory.php:
+<?php
+
+namespace Database\Factories;
+
+use Illuminate\Database\Eloquent\Factories\Factory;
+use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Str;
+
+/**
+ * @extends \Illuminate\Database\Eloquent\Factories\Factory<\App\Models\User>
+ */
+class UserFactory extends Factory
+{
+    /**
+     * The current password being used by the factory.
+     */
+    protected static ?string $password;
+
+    /**
+     * Define the model's default state.
+     *
+     * @return array<string, mixed>
+     */
+    public function definition(): array
+    {
+        return [
+            'name' => fake()->name(),
+            'email' => fake()->unique()->safeEmail(),
+            'email_verified_at' => now(),
+            'password' => static::$password ??= Hash::make('password'),
+            'remember_token' => Str::random(10),
+        ];
+    }
+
+    /**
+     * Indicate that the model's email address should be unverified.
+     */
+    public function unverified(): static
+    {
+        return $this->state(fn (array $attributes) => [
+            'email_verified_at' => null,
+        ]);
+    }
+}
+
+
+
+---------------------------
+* Código para ./database/.gitignore:
+*.sqlite*
+
+
+
+---------------------------
+* Código para ./database/migrations/0001_01_01_000002_create_jobs_table.php:
+<?php
+
+use Illuminate\Database\Migrations\Migration;
+use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\Schema;
+
+return new class extends Migration
+{
+    /**
+     * Run the migrations.
+     */
+    public function up(): void
+    {
+        Schema::create('jobs', function (Blueprint $table) {
+            $table->id();
+            $table->string('queue')->index();
+            $table->longText('payload');
+            $table->unsignedTinyInteger('attempts');
+            $table->unsignedInteger('reserved_at')->nullable();
+            $table->unsignedInteger('available_at');
+            $table->unsignedInteger('created_at');
+        });
+
+        Schema::create('job_batches', function (Blueprint $table) {
+            $table->string('id')->primary();
+            $table->string('name');
+            $table->integer('total_jobs');
+            $table->integer('pending_jobs');
+            $table->integer('failed_jobs');
+            $table->longText('failed_job_ids');
+            $table->mediumText('options')->nullable();
+            $table->integer('cancelled_at')->nullable();
+            $table->integer('created_at');
+            $table->integer('finished_at')->nullable();
+        });
+
+        Schema::create('failed_jobs', function (Blueprint $table) {
+            $table->id();
+            $table->string('uuid')->unique();
+            $table->text('connection');
+            $table->text('queue');
+            $table->longText('payload');
+            $table->longText('exception');
+            $table->timestamp('failed_at')->useCurrent();
+        });
+    }
+
+    /**
+     * Reverse the migrations.
+     */
+    public function down(): void
+    {
+        Schema::dropIfExists('jobs');
+        Schema::dropIfExists('job_batches');
+        Schema::dropIfExists('failed_jobs');
+    }
+};
+
+
+
+---------------------------
+* Código para ./database/migrations/2024_08_21_013534_add_fecha_termino_and_activo_to_pacientes_table.php:
+<?php
+
+use Illuminate\Database\Migrations\Migration;
+use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\Schema;
+
+return new class extends Migration
+{
+    /**
+     * Run the migrations.
+     */
+    public function up(): void
+    {
+        Schema::table('pacientes', function (Blueprint $table) {
+            $table->timestamp('fecha_termino')->nullable(); // Campo para la fecha de término del tratamiento
+            $table->boolean('activo')->default(true); // Campo para indicar si el paciente está activo
+        });
+    }
+
+    /**
+     * Reverse the migrations.
+     */
+    public function down(): void
+    {
+        Schema::table('pacientes', function (Blueprint $table) {
+            $table->dropColumn('fecha_termino');
+            $table->dropColumn('activo');
+        });
+    }
+};
+
+
+---------------------------
+* Código para ./database/migrations/0001_01_01_000001_create_cache_table.php:
+<?php
+
+use Illuminate\Database\Migrations\Migration;
+use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\Schema;
+
+return new class extends Migration
+{
+    /**
+     * Run the migrations.
+     */
+    public function up(): void
+    {
+        Schema::create('cache', function (Blueprint $table) {
+            $table->string('key')->primary();
+            $table->mediumText('value');
+            $table->integer('expiration');
+        });
+
+        Schema::create('cache_locks', function (Blueprint $table) {
+            $table->string('key')->primary();
+            $table->string('owner');
+            $table->integer('expiration');
+        });
+    }
+
+    /**
+     * Reverse the migrations.
+     */
+    public function down(): void
+    {
+        Schema::dropIfExists('cache');
+        Schema::dropIfExists('cache_locks');
+    }
+};
+
+
+
+---------------------------
+* Código para ./database/migrations/0001_01_01_000000_create_users_table.php:
+<?php
+
+use Illuminate\Database\Migrations\Migration;
+use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\Schema;
+
+return new class extends Migration
+{
+    /**
+     * Run the migrations.
+     */
+    public function up(): void
+    {
+        Schema::create('users', function (Blueprint $table) {
+            $table->id();
+            $table->string('name');
+            $table->string('email')->unique();
+            $table->timestamp('email_verified_at')->nullable();
+            $table->string('password');
+            $table->rememberToken();
+            $table->timestamps();
+        });
+
+        Schema::create('password_reset_tokens', function (Blueprint $table) {
+            $table->string('email')->primary();
+            $table->string('token');
+            $table->timestamp('created_at')->nullable();
+        });
+
+        Schema::create('sessions', function (Blueprint $table) {
+            $table->string('id')->primary();
+            $table->foreignId('user_id')->nullable()->index();
+            $table->string('ip_address', 45)->nullable();
+            $table->text('user_agent')->nullable();
+            $table->longText('payload');
+            $table->integer('last_activity')->index();
+        });
+    }
+
+    /**
+     * Reverse the migrations.
+     */
+    public function down(): void
+    {
+        Schema::dropIfExists('users');
+        Schema::dropIfExists('password_reset_tokens');
+        Schema::dropIfExists('sessions');
+    }
+};
+
+
+
+---------------------------
+* Código para ./database/migrations/2024_07_25_021553_create_personal_access_tokens_table.php:
+<?php
+
+use Illuminate\Database\Migrations\Migration;
+use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\Schema;
+
+return new class extends Migration
+{
+    /**
+     * Run the migrations.
+     */
+    public function up(): void
+    {
+        Schema::create('personal_access_tokens', function (Blueprint $table) {
+            $table->id();
+            $table->morphs('tokenable');
+            $table->string('name');
+            $table->string('token', 64)->unique();
+            $table->text('abilities')->nullable();
+            $table->timestamp('last_used_at')->nullable();
+            $table->timestamp('expires_at')->nullable();
+            $table->timestamps();
+        });
+    }
+
+    /**
+     * Reverse the migrations.
+     */
+    public function down(): void
+    {
+        Schema::dropIfExists('personal_access_tokens');
+    }
+};
+
+
+
+---------------------------
+* Código para ./database/migrations/2024_07_25_021941_create_pacientes_table.php:
+<?php
+
+use Illuminate\Database\Migrations\Migration;
+use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\Schema;
+
+class CreatePacientesTable extends Migration
+{
+    /**
+     * Run the migrations.
+     *
+     * @return void
+     */
+    public function up()
+    {
+        Schema::create('pacientes', function (Blueprint $table) {
+            $table->id();
+            $table->string('rol')->unique();
+            $table->string('nombre');
+            $table->integer('edad');
+            $table->string('rut');
+            $table->string('prevision');
+            $table->string('cama_hospitalizacion');
+            $table->string('diagnostico');
+            $table->string('cirujano');
+            $table->string('cirugia');
+            $table->string('tratamiento_modalidad')->nullable();
+            $table->string('tratamiento_medicamento')->nullable();
+            $table->string('tipo_bloqueo')->nullable();
+            $table->json('factores_riesgo')->nullable();
+            $table->timestamps();
+            $table->softDeletes(); // Añade este campo
+        });
+    }
+
+    /**
+     * Reverse the migrations.
+     *
+     * @return void
+     */
+    public function down()
+    {
+        Schema::dropIfExists('pacientes');
+    }
+}
+
+
+
+---------------------------
+* Código para ./database/database.sqlite:
+El archivo está vacío porque no tiene código
+
+
+
+Código para los archivos en el directorio ./app y sus subdirectorios:
+---------------------------
+* Código para ./app/Providers/AppServiceProvider.php:
+<?php
+
+namespace App\Providers;
+
+use Illuminate\Support\ServiceProvider;
+
+class AppServiceProvider extends ServiceProvider
+{
+    /**
+     * Register any application services.
+     */
+    public function register(): void
+    {
+        //
+    }
+
+    /**
+     * Bootstrap any application services.
+     */
+    public function boot(): void
+    {
+        //
+    }
+}
+
+
+
+---------------------------
+* Código para ./app/Models/User.php:
+<?php
+
+namespace App\Models;
+
+// use Illuminate\Contracts\Auth\MustVerifyEmail;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Foundation\Auth\User as Authenticatable;
+use Illuminate\Notifications\Notifiable;
+
+class User extends Authenticatable
+{
+    use HasFactory, Notifiable;
+
+    /**
+     * The attributes that are mass assignable.
+     *
+     * @var array<int, string>
+     */
+    protected $fillable = [
+        'name',
+        'email',
+        'password',
+    ];
+
+    /**
+     * The attributes that should be hidden for serialization.
+     *
+     * @var array<int, string>
+     */
+    protected $hidden = [
+        'password',
+        'remember_token',
+    ];
+
+    /**
+     * Get the attributes that should be cast.
+     *
+     * @return array<string, string>
+     */
+    protected function casts(): array
+    {
+        return [
+            'email_verified_at' => 'datetime',
+            'password' => 'hashed',
+        ];
+    }
+}
+
+
+
+---------------------------
+* Código para ./app/Models/Paciente.php:
+<?php
+
+namespace App\Models;
+
+use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\SoftDeletes;
+
+class Paciente extends Model
+{
+    use HasFactory, SoftDeletes; // Utiliza las traits HasFactory y SoftDeletes
+
+    // Definición de los atributos que son asignables en masa (mass assignable)
+    protected $fillable = [
+        'rol',  // Rol único asignado al paciente
+        'nombre',  // Nombre del paciente
+        'edad',  // Edad del paciente
+        'rut',  // RUT (identificación) del paciente
+        'prevision',  // Tipo de previsión o seguro del paciente
+        'cama_hospitalizacion',  // Número de cama asignada al paciente en el hospital
+        'diagnostico',  // Diagnóstico médico del paciente
+        'cirujano',  // Nombre del cirujano asignado al paciente
+        'cirugia',  // Tipo de cirugía realizada o planificada
+        'tratamiento_modalidad',  // Modalidad de tratamiento (opcional)
+        'tratamiento_medicamento',  // Medicamento utilizado en el tratamiento (opcional)
+        'tipo_bloqueo',  // Tipo de bloqueo utilizado (opcional)
+        'factores_riesgo',  // Factores de riesgo asociados al paciente (almacenado como JSON)
+        'fecha_termino',  // Fecha de término del tratamiento (puede ser null si no ha terminado)
+        'activo',  // Indica si el paciente está activo o no (booleano)
+    ];
+
+    // Definición de cómo se deben convertir los atributos al recuperar los datos de la base de datos
+    protected $casts = [
+        'factores_riesgo' => 'array',  // Convierte el campo 'factores_riesgo' de JSON a un arreglo PHP
+    ];
+}
+
+
+
+---------------------------
+* Código para ./app/Http/Controllers/Auth/ConfirmablePasswordController.php:
+<?php
+
+namespace App\Http\Controllers\Auth;
+
+use App\Http\Controllers\Controller;
+use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Validation\ValidationException;
+use Illuminate\View\View;
+
+class ConfirmablePasswordController extends Controller
+{
+    /**
+     * Show the confirm password view.
+     */
+    public function show(): View
+    {
+        return view('auth.confirm-password');
+    }
+
+    /**
+     * Confirm the user's password.
+     */
+    public function store(Request $request): RedirectResponse
+    {
+        if (! Auth::guard('web')->validate([
+            'email' => $request->user()->email,
+            'password' => $request->password,
+        ])) {
+            throw ValidationException::withMessages([
+                'password' => __('auth.password'),
+            ]);
+        }
+
+        $request->session()->put('auth.password_confirmed_at', time());
+
+        return redirect()->intended(route('dashboard', absolute: false));
+    }
+}
+
+
+
+---------------------------
+* Código para ./app/Http/Controllers/Auth/AuthenticatedSessionController.php:
+<?php
+
+namespace App\Http\Controllers\Auth;
+
+use App\Http\Controllers\Controller;
+use App\Http\Requests\Auth\LoginRequest;
+use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\View\View;
+
+class AuthenticatedSessionController extends Controller
+{
+    /**
+     * Display the login view.
+     */
+    public function create(): View
+    {
+        return view('auth.login');
+    }
+
+    /**
+     * Handle an incoming authentication request.
+     */
+    public function store(LoginRequest $request): RedirectResponse
+    {
+        $request->authenticate();
+
+        $request->session()->regenerate();
+
+        return redirect()->intended(route('dashboard', absolute: false));
+    }
+
+    /**
+     * Destroy an authenticated session.
+     */
+    public function destroy(Request $request): RedirectResponse
+    {
+        Auth::guard('web')->logout();
+
+        $request->session()->invalidate();
+
+        $request->session()->regenerateToken();
+
+        return redirect('/');
+    }
+}
+
+
+
+---------------------------
+* Código para ./app/Http/Controllers/Auth/PasswordController.php:
+<?php
+
+namespace App\Http\Controllers\Auth;
+
+use App\Http\Controllers\Controller;
+use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Hash;
+use Illuminate\Validation\Rules\Password;
+
+class PasswordController extends Controller
+{
+    /**
+     * Update the user's password.
+     */
+    public function update(Request $request): RedirectResponse
+    {
+        $validated = $request->validateWithBag('updatePassword', [
+            'current_password' => ['required', 'current_password'],
+            'password' => ['required', Password::defaults(), 'confirmed'],
+        ]);
+
+        $request->user()->update([
+            'password' => Hash::make($validated['password']),
+        ]);
+
+        return back()->with('status', 'password-updated');
+    }
+}
+
+
+
+---------------------------
+* Código para ./app/Http/Controllers/Auth/NewPasswordController.php:
+<?php
+
+namespace App\Http\Controllers\Auth;
+
+use App\Http\Controllers\Controller;
+use Illuminate\Auth\Events\PasswordReset;
+use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Password;
+use Illuminate\Support\Str;
+use Illuminate\Validation\Rules;
+use Illuminate\View\View;
+
+class NewPasswordController extends Controller
+{
+    /**
+     * Display the password reset view.
+     */
+    public function create(Request $request): View
+    {
+        return view('auth.reset-password', ['request' => $request]);
+    }
+
+    /**
+     * Handle an incoming new password request.
+     *
+     * @throws \Illuminate\Validation\ValidationException
+     */
+    public function store(Request $request): RedirectResponse
+    {
+        $request->validate([
+            'token' => ['required'],
+            'email' => ['required', 'email'],
+            'password' => ['required', 'confirmed', Rules\Password::defaults()],
+        ]);
+
+        // Here we will attempt to reset the user's password. If it is successful we
+        // will update the password on an actual user model and persist it to the
+        // database. Otherwise we will parse the error and return the response.
+        $status = Password::reset(
+            $request->only('email', 'password', 'password_confirmation', 'token'),
+            function ($user) use ($request) {
+                $user->forceFill([
+                    'password' => Hash::make($request->password),
+                    'remember_token' => Str::random(60),
+                ])->save();
+
+                event(new PasswordReset($user));
+            }
+        );
+
+        // If the password was successfully reset, we will redirect the user back to
+        // the application's home authenticated view. If there is an error we can
+        // redirect them back to where they came from with their error message.
+        return $status == Password::PASSWORD_RESET
+                    ? redirect()->route('login')->with('status', __($status))
+                    : back()->withInput($request->only('email'))
+                        ->withErrors(['email' => __($status)]);
+    }
+}
+
+
+
+---------------------------
+* Código para ./app/Http/Controllers/Auth/EmailVerificationNotificationController.php:
+<?php
+
+namespace App\Http\Controllers\Auth;
+
+use App\Http\Controllers\Controller;
+use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\Request;
+
+class EmailVerificationNotificationController extends Controller
+{
+    /**
+     * Send a new email verification notification.
+     */
+    public function store(Request $request): RedirectResponse
+    {
+        if ($request->user()->hasVerifiedEmail()) {
+            return redirect()->intended(route('dashboard', absolute: false));
+        }
+
+        $request->user()->sendEmailVerificationNotification();
+
+        return back()->with('status', 'verification-link-sent');
+    }
+}
+
+
+
+---------------------------
+* Código para ./app/Http/Controllers/Auth/EmailVerificationPromptController.php:
+<?php
+
+namespace App\Http\Controllers\Auth;
+
+use App\Http\Controllers\Controller;
+use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\Request;
+use Illuminate\View\View;
+
+class EmailVerificationPromptController extends Controller
+{
+    /**
+     * Display the email verification prompt.
+     */
+    public function __invoke(Request $request): RedirectResponse|View
+    {
+        return $request->user()->hasVerifiedEmail()
+                    ? redirect()->intended(route('dashboard', absolute: false))
+                    : view('auth.verify-email');
+    }
+}
+
+
+
+---------------------------
+* Código para ./app/Http/Controllers/Auth/PasswordResetLinkController.php:
+<?php
+
+namespace App\Http\Controllers\Auth;
+
+use App\Http\Controllers\Controller;
+use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Password;
+use Illuminate\View\View;
+
+class PasswordResetLinkController extends Controller
+{
+    /**
+     * Display the password reset link request view.
+     */
+    public function create(): View
+    {
+        return view('auth.forgot-password');
+    }
+
+    /**
+     * Handle an incoming password reset link request.
+     *
+     * @throws \Illuminate\Validation\ValidationException
+     */
+    public function store(Request $request): RedirectResponse
+    {
+        $request->validate([
+            'email' => ['required', 'email'],
+        ]);
+
+        // We will send the password reset link to this user. Once we have attempted
+        // to send the link, we will examine the response then see the message we
+        // need to show to the user. Finally, we'll send out a proper response.
+        $status = Password::sendResetLink(
+            $request->only('email')
+        );
+
+        return $status == Password::RESET_LINK_SENT
+                    ? back()->with('status', __($status))
+                    : back()->withInput($request->only('email'))
+                        ->withErrors(['email' => __($status)]);
+    }
+}
+
+
+
+---------------------------
+* Código para ./app/Http/Controllers/Auth/VerifyEmailController.php:
+<?php
+
+namespace App\Http\Controllers\Auth;
+
+use App\Http\Controllers\Controller;
+use Illuminate\Auth\Events\Verified;
+use Illuminate\Foundation\Auth\EmailVerificationRequest;
+use Illuminate\Http\RedirectResponse;
+
+class VerifyEmailController extends Controller
+{
+    /**
+     * Mark the authenticated user's email address as verified.
+     */
+    public function __invoke(EmailVerificationRequest $request): RedirectResponse
+    {
+        if ($request->user()->hasVerifiedEmail()) {
+            return redirect()->intended(route('dashboard', absolute: false).'?verified=1');
+        }
+
+        if ($request->user()->markEmailAsVerified()) {
+            event(new Verified($request->user()));
+        }
+
+        return redirect()->intended(route('dashboard', absolute: false).'?verified=1');
+    }
+}
+
+
+
+---------------------------
+* Código para ./app/Http/Controllers/Auth/RegisteredUserController.php:
+<?php
+
+namespace App\Http\Controllers\Auth;
+
+use App\Http\Controllers\Controller;
+use App\Models\User;
+use Illuminate\Auth\Events\Registered;
+use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Hash;
+use Illuminate\Validation\Rules;
+use Illuminate\View\View;
+
+class RegisteredUserController extends Controller
+{
+    /**
+     * Display the registration view.
+     */
+    public function create(): View
+    {
+        return view('auth.register');
+    }
+
+    /**
+     * Handle an incoming registration request.
+     *
+     * @throws \Illuminate\Validation\ValidationException
+     */
+    public function store(Request $request): RedirectResponse
+    {
+        $request->validate([
+            'name' => ['required', 'string', 'max:255'],
+            'email' => ['required', 'string', 'lowercase', 'email', 'max:255', 'unique:'.User::class],
+            'password' => ['required', 'confirmed', Rules\Password::defaults()],
+        ]);
+
+        $user = User::create([
+            'name' => $request->name,
+            'email' => $request->email,
+            'password' => Hash::make($request->password),
+        ]);
+
+        event(new Registered($user));
+
+        Auth::login($user);
+
+        return redirect(route('dashboard', absolute: false));
+    }
+}
+
+
+
+---------------------------
+* Código para ./app/Http/Controllers/ProfileController.php:
+<?php
+
+namespace App\Http\Controllers;
+
+use App\Http\Requests\ProfileUpdateRequest;
+use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Redirect;
+use Illuminate\View\View;
+
+class ProfileController extends Controller
+{
+    /**
+     * Display the user's profile form.
+     */
+    public function edit(Request $request): View
+    {
+        return view('profile.edit', [
+            'user' => $request->user(),
+        ]);
+    }
+
+    /**
+     * Update the user's profile information.
+     */
+    public function update(ProfileUpdateRequest $request): RedirectResponse
+    {
+        $request->user()->fill($request->validated());
+
+        if ($request->user()->isDirty('email')) {
+            $request->user()->email_verified_at = null;
+        }
+
+        $request->user()->save();
+
+        return Redirect::route('profile.edit')->with('status', 'profile-updated');
+    }
+
+    /**
+     * Delete the user's account.
+     */
+    public function destroy(Request $request): RedirectResponse
+    {
+        $request->validateWithBag('userDeletion', [
+            'password' => ['required', 'current_password'],
+        ]);
+
+        $user = $request->user();
+
+        Auth::logout();
+
+        $user->delete();
+
+        $request->session()->invalidate();
+        $request->session()->regenerateToken();
+
+        return Redirect::to('/');
+    }
+}
+
+
+
+---------------------------
+* Código para ./app/Http/Controllers/Controller.php:
+<?php
+
+namespace App\Http\Controllers;
+
+abstract class Controller
+{
+    //
+}
+
+
+
+---------------------------
+* Código para ./app/Http/Controllers/PacienteController.php:
+<?php
+
+namespace App\Http\Controllers;
+
+use App\Models\Paciente;
+use Illuminate\Http\Request;
+
+class PacienteController extends Controller
+{
+    // Constructor para aplicar middleware de autenticación
+    public function __construct()
+    {
+        $this->middleware('auth');
+    }
+
+    // Método para listar todos los pacientes
+    public function index(Request $request)
+    {
+        $query = Paciente::query();
+
+        // Búsqueda por texto libre en varios campos
+        if ($request->has('q')) {
+            $searchTerm = $request->input('q');
+            $query->where(function ($subQuery) use ($searchTerm) {
+                $subQuery->where('nombre', 'LIKE', "%{$searchTerm}%")
+                         ->orWhere('rol', 'LIKE', "%{$searchTerm}%")
+                         ->orWhere('rut', 'LIKE', "%{$searchTerm}%")
+                         ->orWhere('prevision', 'LIKE', "%{$searchTerm}%")
+                         ->orWhere('diagnostico', 'LIKE', "%{$searchTerm}%")
+                         ->orWhere('cirujano', 'LIKE', "%{$searchTerm}%")
+                         ->orWhere('cirugia', 'LIKE', "%{$searchTerm}%")
+                         ->orWhereJsonContains('factores_riesgo', $searchTerm);
+                // Agrega más campos si es necesario
+            });
+        }
+
+        // Filtros específicos, excluyendo ciertos parámetros de control como 'q', 'page' y 'per_page'
+        $excludedParams = ['q', 'page', 'per_page'];
+        foreach ($request->except($excludedParams) as $key => $value) {
+            if ($key === 'factores_riesgo') {
+                $query->whereJsonContains('factores_riesgo', $value);
+            } elseif (in_array($key, ['edad', 'activo'])) {
+                $query->where($key, $value);
+            } else {
+                $query->where($key, 'LIKE', '%' . $value . '%');
+            }
+        }
+
+        // Paginación de los resultados
+        $pacientes = $query->paginate(10);
+
+        // Retornar la vista con los pacientes
+        return view('pacientes.index', compact('pacientes'));
+    }
+
+    // Mostrar el formulario para crear un nuevo paciente
+    public function create()
+    {
+        return view('pacientes.create');
+    }
+
+    // Almacenar un nuevo paciente en la base de datos
+    public function store(Request $request)
+    {
+        // Validación de los datos de entrada
+        $validatedData = $request->validate([
+            'rol' => 'required|unique:pacientes',
+            'nombre' => 'required',
+            'edad' => 'required|integer',
+            'rut' => 'required',
+            'prevision' => 'required',
+            'cama_hospitalizacion' => 'required',
+            'diagnostico' => 'required',
+            'cirujano' => 'required',
+            'cirugia' => 'required',
+            'tratamiento_modalidad' => 'nullable|string',
+            'tratamiento_medicamento' => 'nullable|string',
+            'tipo_bloqueo' => 'nullable|string',
+            'factores_riesgo' => 'nullable|array',
+            'fecha_termino' => 'nullable|date',
+            'activo' => 'boolean',
+        ]);
+
+        // Crear un nuevo paciente con los datos validados
+        $paciente = Paciente::create($validatedData);
+
+        // Redirigir al listado con mensaje de éxito
+        return redirect()->route('pacientes.index')->with('success', 'Paciente creado con éxito');
+    }
+
+    // Mostrar un paciente específico
+    public function show(Paciente $paciente)
+    {
+        return view('pacientes.show', compact('paciente'));
+    }
+
+    // Mostrar el formulario para editar un paciente existente
+    public function edit(Paciente $paciente)
+    {
+        return view('pacientes.edit', compact('paciente'));
+    }
+
+    // Actualizar un paciente existente
+    public function update(Request $request, Paciente $paciente)
+    {
+        // Validación de los datos de entrada
+        $validatedData = $request->validate([
+            'rol' => 'required|unique:pacientes,rol,' . $paciente->id,
+            'nombre' => 'required',
+            'edad' => 'required|integer',
+            'rut' => 'required',
+            'prevision' => 'required',
+            'cama_hospitalizacion' => 'required',
+            'diagnostico' => 'required',
+            'cirujano' => 'required',
+            'cirugia' => 'required',
+            'tratamiento_modalidad' => 'nullable|string',
+            'tratamiento_medicamento' => 'nullable|string',
+            'tipo_bloqueo' => 'nullable|string',
+            'factores_riesgo' => 'nullable|array',
+            'fecha_termino' => 'nullable|date',
+            'activo' => 'boolean',
+        ]);
+
+        // Actualizar el paciente con los datos validados
+        $paciente->update($validatedData);
+
+        // Redirigir al detalle del paciente con mensaje de éxito
+        return redirect()->route('pacientes.show', $paciente)->with('success', 'Paciente actualizado con éxito');
+    }
+
+    // Eliminar (soft delete) un paciente
+    public function destroy(Paciente $paciente)
+    {
+        $paciente->delete();
+
+        // Redirigir al listado con mensaje de éxito
+        return redirect()->route('pacientes.index')->with('success', 'Paciente eliminado con éxito');
+    }
+
+    // Método para terminar el tratamiento de un paciente
+    public function terminarTratamiento(Paciente $paciente)
+    {
+        // Actualizar el paciente con la fecha de término del tratamiento y desactivarlo
+        $paciente->update([
+            'fecha_termino' => now(),
+            'activo' => false,
+        ]);
+
+        // Redirigir al detalle del paciente con mensaje de éxito
+        return redirect()->route('pacientes.show', $paciente)->with('success', 'Tratamiento terminado con éxito');
+    }
+
+    // Mostrar lista de pacientes eliminados (soft deleted)
+    public function trashed()
+    {
+        $pacientes = Paciente::onlyTrashed()->paginate(10);
+
+        // Retornar la vista con los pacientes eliminados
+        return view('pacientes.trashed', compact('pacientes'));
+    }
+
+    // Restaurar un paciente eliminado (soft deleted)
+    public function restore($id)
+    {
+        $paciente = Paciente::onlyTrashed()->findOrFail($id);
+        $paciente->restore();
+
+        // Redirigir a la lista de pacientes eliminados con mensaje de éxito
+        return redirect()->route('pacientes.trashed')->with('success', 'Paciente restaurado con éxito');
+    }
+
+    // Eliminar permanentemente un paciente de la base de datos
+    public function forceDelete($id)
+    {
+        $paciente = Paciente::onlyTrashed()->findOrFail($id);
+        $paciente->forceDelete();
+
+        // Redirigir a la lista de pacientes eliminados con mensaje de éxito
+        return redirect()->route('pacientes.trashed')->with('success', 'Paciente eliminado permanentemente');
+    }
+}
+
+
+
+---------------------------
+* Código para ./app/Http/Requests/ProfileUpdateRequest.php:
+<?php
+
+namespace App\Http\Requests;
+
+use App\Models\User;
+use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rule;
+
+class ProfileUpdateRequest extends FormRequest
+{
+    /**
+     * Get the validation rules that apply to the request.
+     *
+     * @return array<string, \Illuminate\Contracts\Validation\Rule|array|string>
+     */
+    public function rules(): array
+    {
+        return [
+            'name' => ['required', 'string', 'max:255'],
+            'email' => [
+                'required',
+                'string',
+                'lowercase',
+                'email',
+                'max:255',
+                Rule::unique(User::class)->ignore($this->user()->id),
+            ],
+        ];
+    }
+}
+
+
+
+---------------------------
+* Código para ./app/Http/Requests/Auth/LoginRequest.php:
+<?php
+
+namespace App\Http\Requests\Auth;
+
+use Illuminate\Auth\Events\Lockout;
+use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\RateLimiter;
+use Illuminate\Support\Str;
+use Illuminate\Validation\ValidationException;
+
+class LoginRequest extends FormRequest
+{
+    /**
+     * Determine if the user is authorized to make this request.
+     */
+    public function authorize(): bool
+    {
+        return true;
+    }
+
+    /**
+     * Get the validation rules that apply to the request.
+     *
+     * @return array<string, \Illuminate\Contracts\Validation\Rule|array|string>
+     */
+    public function rules(): array
+    {
+        return [
+            'email' => ['required', 'string', 'email'],
+            'password' => ['required', 'string'],
+        ];
+    }
+
+    /**
+     * Attempt to authenticate the request's credentials.
+     *
+     * @throws \Illuminate\Validation\ValidationException
+     */
+    public function authenticate(): void
+    {
+        $this->ensureIsNotRateLimited();
+
+        if (! Auth::attempt($this->only('email', 'password'), $this->boolean('remember'))) {
+            RateLimiter::hit($this->throttleKey());
+
+            throw ValidationException::withMessages([
+                'email' => trans('auth.failed'),
+            ]);
+        }
+
+        RateLimiter::clear($this->throttleKey());
+    }
+
+    /**
+     * Ensure the login request is not rate limited.
+     *
+     * @throws \Illuminate\Validation\ValidationException
+     */
+    public function ensureIsNotRateLimited(): void
+    {
+        if (! RateLimiter::tooManyAttempts($this->throttleKey(), 5)) {
+            return;
+        }
+
+        event(new Lockout($this));
+
+        $seconds = RateLimiter::availableIn($this->throttleKey());
+
+        throw ValidationException::withMessages([
+            'email' => trans('auth.throttle', [
+                'seconds' => $seconds,
+                'minutes' => ceil($seconds / 60),
+            ]),
+        ]);
+    }
+
+    /**
+     * Get the rate limiting throttle key for the request.
+     */
+    public function throttleKey(): string
+    {
+        return Str::transliterate(Str::lower($this->string('email')).'|'.$this->ip());
+    }
+}
+
+
+
+---------------------------
+* Código para ./app/View/Components/GuestLayout.php:
+<?php
+
+namespace App\View\Components;
+
+use Illuminate\View\Component;
+use Illuminate\View\View;
+
+class GuestLayout extends Component
+{
+    /**
+     * Get the view / contents that represents the component.
+     */
+    public function render(): View
+    {
+        return view('layouts.guest');
+    }
+}
+
+
+
+---------------------------
+* Código para ./app/View/Components/AppLayout.php:
+<?php
+
+namespace App\View\Components;
+
+use Illuminate\View\Component;
+use Illuminate\View\View;
+
+class AppLayout extends Component
+{
+    /**
+     * Get the view / contents that represents the component.
+     */
+    public function render(): View
+    {
+        return view('layouts.app');
+    }
+}
+
+
+
+Se entregaron 33 archivos con código.
+Las rutas de los archivos entregados son:
+routes/console.php
+routes/auth.php
+routes/web.php
+database/seeders/PacienteSeeder.php
+database/seeders/DatabaseSeeder.php
+database/factories/PacienteFactory.php
+database/factories/UserFactory.php
+database/.gitignore
+database/migrations/0001_01_01_000002_create_jobs_table.php
+database/migrations/2024_08_21_013534_add_fecha_termino_and_activo_to_pacientes_table.php
+database/migrations/0001_01_01_000001_create_cache_table.php
+database/migrations/0001_01_01_000000_create_users_table.php
+database/migrations/2024_07_25_021553_create_personal_access_tokens_table.php
+database/migrations/2024_07_25_021941_create_pacientes_table.php
+app/Providers/AppServiceProvider.php
+app/Models/User.php
+app/Models/Paciente.php
+app/Http/Controllers/Auth/ConfirmablePasswordController.php
+app/Http/Controllers/Auth/AuthenticatedSessionController.php
+app/Http/Controllers/Auth/PasswordController.php
+app/Http/Controllers/Auth/NewPasswordController.php
+app/Http/Controllers/Auth/EmailVerificationNotificationController.php
+app/Http/Controllers/Auth/EmailVerificationPromptController.php
+app/Http/Controllers/Auth/PasswordResetLinkController.php
+app/Http/Controllers/Auth/VerifyEmailController.php
+app/Http/Controllers/Auth/RegisteredUserController.php
+app/Http/Controllers/ProfileController.php
+app/Http/Controllers/Controller.php
+app/Http/Controllers/PacienteController.php
+app/Http/Requests/ProfileUpdateRequest.php
+app/Http/Requests/Auth/LoginRequest.php
+app/View/Components/GuestLayout.php
+app/View/Components/AppLayout.php
+
+Se encontraron 1 archivos sin código.
+Las rutas de los archivos sin código son:
+database/database.sqlite
