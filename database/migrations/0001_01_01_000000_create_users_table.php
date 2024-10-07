@@ -14,9 +14,14 @@ return new class extends Migration
         Schema::create('users', function (Blueprint $table) {
             $table->id();
             $table->string('name');
+            $table->string('apellidos')->nullable(); // Añadido: Campo para los apellidos
+            $table->string('dni')->unique()->nullable(); // Añadido: Campo para el DNI
             $table->string('email')->unique();
             $table->timestamp('email_verified_at')->nullable();
             $table->string('password');
+            $table->string('telefono')->nullable(); // Añadido: Campo para el teléfono
+            $table->string('pais')->nullable(); // Añadido: Campo para el país
+            $table->text('sobre_ti')->nullable(); // Añadido: Campo para la descripción
             $table->rememberToken();
             $table->timestamps();
         });

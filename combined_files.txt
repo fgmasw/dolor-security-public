@@ -83,44 +83,63 @@ Route::middleware('auth')->group(function () {
 * Código para ./routes/web.php:
 <?php
 
+use App\Http\Controllers\Auth\RegisterController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\PacienteController;
 use Illuminate\Support\Facades\Route;
 
-// Ruta de bienvenida
+// Ruta principal que carga la vista home.blade.php y se nombra 'home'
 Route::get('/', function () {
-    return view('welcome');
-});
+    return view('home');
+})->name('home');
 
-// Ruta del dashboard (panel de control)
+// Ruta para la guía en video
+Route::get('/guia/video', function () {
+    return view('guia.video'); // Asegúrate de que exista la vista 'guia/video.blade.php'
+})->name('guia.video');
+
+// Ruta del dashboard sin controlador, pero protegida por autenticación
 Route::get('/dashboard', function () {
-    return view('dashboard');
+    return view('dashboard'); // Carga directamente la vista del dashboard
 })->middleware(['auth', 'verified'])->name('dashboard');
 
 // Rutas protegidas con middleware 'auth'
 Route::middleware(['auth'])->group(function () {
-    // Rutas de perfil de usuario (ya existentes)
+
+    // Rutas de perfil de usuario
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
 
-    // Rutas de pacientes
-    // Ruta para obtener los pacientes eliminados (soft deleted)
-    Route::get('pacientes/trashed', [PacienteController::class, 'trashed'])->name('pacientes.trashed');
+    // Agrupación de rutas de pacientes bajo el prefijo "pacientes"
+    Route::prefix('pacientes')->name('pacientes.')->group(function () {
+        // Ruta para obtener los pacientes eliminados (soft deleted)
+        Route::get('trashed', [PacienteController::class, 'trashed'])->name('trashed');
 
-    // Rutas para los recursos de pacientes
-    Route::resource('pacientes', PacienteController::class);
+        // Rutas para los recursos de pacientes
+        Route::resource('/', PacienteController::class);
 
-    // Ruta para terminar el tratamiento de un paciente
-    Route::put('pacientes/{id}/terminar-tratamiento', [PacienteController::class, 'terminarTratamiento'])->name('pacientes.terminarTratamiento');
+        // Ruta para terminar el tratamiento de un paciente
+        Route::put('{id}/terminar-tratamiento', [PacienteController::class, 'terminarTratamiento'])->name('terminarTratamiento');
 
-    // Ruta para restaurar un paciente eliminado
-    Route::patch('pacientes/{id}/restore', [PacienteController::class, 'restore'])->name('pacientes.restore');
+        // Ruta para restaurar un paciente eliminado
+        Route::patch('{id}/restore', [PacienteController::class, 'restore'])->name('restore');
 
-    // Ruta para eliminar permanentemente un paciente
-    Route::delete('pacientes/{id}/force-delete', [PacienteController::class, 'forceDelete'])->name('pacientes.forceDelete');
+        // Ruta para eliminar permanentemente un paciente
+        Route::delete('{id}/force-delete', [PacienteController::class, 'forceDelete'])->name('forceDelete');
+    });
 });
 
+// Rutas de registro
+Route::get('register', [RegisterController::class, 'showRegistrationForm'])->name('register');
+Route::post('register', [RegisterController::class, 'register']);
+
+// Ruta para la vista de prueba
+Route::get('/test', function () {
+    return view('test'); // Asegúrate de que 'test' sea el nombre del archivo sin la extensión .blade.php
+})->name('test');
+
+// Requerir las rutas de autenticación ya generadas
 require __DIR__.'/auth.php';
 
 
@@ -146,6 +165,40 @@ class PacienteSeeder extends Seeder
 
 
 ---------------------------
+* Código para ./database/seeders/UserSeeder.php:
+<?php
+
+namespace Database\Seeders;
+
+use Illuminate\Database\Seeder;
+use Illuminate\Support\Facades\Hash;
+use App\Models\User;
+
+class UserSeeder extends Seeder
+{
+    /**
+     * Run the database seeds.
+     *
+     * @return void
+     */
+    public function run()
+    {
+        User::create([
+            'name' => 'Juan',
+            'apellidos' => 'Pérez Gómez',
+            'dni' => '12345678L', // Formato español de DNI
+            'email' => 'seguridadweb@campusviu.es',
+            'password' => Hash::make('S3gur1d4d?W3b'),
+            'telefono' => '+34600123456', // Número de teléfono con prefijo de país
+            'pais' => 'ES', // Código del país
+            'sobre_ti' => 'Soy un usuario de prueba para validaciones de seguridad web. Disfruto de la programación y las tecnologías web.',
+        ]);
+    }
+}
+
+
+
+---------------------------
 * Código para ./database/seeders/DatabaseSeeder.php:
 <?php
 
@@ -162,11 +215,16 @@ class DatabaseSeeder extends Seeder
      */
     public function run(): void
     {
+        // Llama al seeder del usuario
         $this->call([
             PacienteSeeder::class,
+            UserSeeder::class, // Añadido para ejecutar el seeder del usuario
         ]);
+
+        // Ejemplo de generación de 10 usuarios ficticios, si lo necesitas
         // User::factory(10)->create();
 
+        // Ejemplo de usuario ficticio, si lo necesitas
         // User::factory()->create([
         //     'name' => 'Test User',
         //     'email' => 'test@example.com',
@@ -425,9 +483,14 @@ return new class extends Migration
         Schema::create('users', function (Blueprint $table) {
             $table->id();
             $table->string('name');
+            $table->string('apellidos')->nullable(); // Añadido: Campo para los apellidos
+            $table->string('dni')->unique()->nullable(); // Añadido: Campo para el DNI
             $table->string('email')->unique();
             $table->timestamp('email_verified_at')->nullable();
             $table->string('password');
+            $table->string('telefono')->nullable(); // Añadido: Campo para el teléfono
+            $table->string('pais')->nullable(); // Añadido: Campo para el país
+            $table->text('sobre_ti')->nullable(); // Añadido: Campo para la descripción
             $table->rememberToken();
             $table->timestamps();
         });
@@ -772,6 +835,54 @@ $classes = ($active ?? false)
 
 
 ---------------------------
+* Código para ./resources/views/components/app-layout.blade.php:
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ config('app.name', 'Unidad de Dolor') }}</title>
+
+    <!-- Incluir Bootstrap local -->
+    <link href="{{ asset('css/bootstrap.min.css') }}" rel="stylesheet">
+
+    <!-- Incluye los estilos -->
+    @vite('resources/css/app.css')
+    @vite('resources/js/app.js')
+</head>
+<body>
+
+    <!-- Contenido principal -->
+    <main class="py-4">
+        {{ $slot }}
+    </main>
+
+    <!-- Mensajes de Éxito y Error -->
+    @if(session('success'))
+        <div class="alert alert-success">
+            {{ session('success') }}
+        </div>
+    @endif
+
+    @if($errors->any())
+        <div class="alert alert-danger">
+            <ul>
+                @foreach($errors->all() as $error)
+                    <li>{{ $error }}</li>
+                @endforeach
+            </ul>
+        </div>
+    @endif
+
+    <!-- Scripts -->
+    <script src="{{ asset('js/bootstrap.bundle.min.js') }}"></script>
+    @stack('scripts')
+</body>
+</html>
+
+
+
+---------------------------
 * Código para ./resources/views/components/dropdown.blade.php:
 @props(['align' => 'right', 'width' => '48', 'contentClasses' => 'py-1 bg-white'])
 
@@ -812,36 +923,40 @@ $width = match ($width) {
 
 
 ---------------------------
-* Código para ./resources/views/partials/navbar.blade.php:
-<nav class="navbar navbar-expand-lg navbar-dark bg-dark fixed-top">
-    <div class="container">
-        <a class="navbar-brand" href="{{ route('home') }}">Unidad de Dolor</a>
-        <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
-            <span class="navbar-toggler-icon"></span>
-        </button>
+* Código para ./resources/views/partials/header.blade.php:
+<!-- resources/views/partials/header.blade.php -->
+<header class="bg-gray-800 text-white py-4">
+    <div class="container mx-auto flex justify-between items-center">
+        <!-- Logo -->
+        <a href="{{ route('dashboard') }}" class="text-2xl font-bold">
+            Unidad de Dolor
+        </a>
 
-        <div class="collapse navbar-collapse" id="navbarNav">
-            <ul class="navbar-nav ml-auto">
-                <!-- Enlaces de navegación -->
-                <li class="nav-item">
-                    <a class="nav-link" href="{{ route('home') }}">Inicio</a>
-                </li>
-                <li class="nav-item">
-                    <a class="nav-link" href="{{ route('pacientes.index') }}">Ver Pacientes</a>
-                </li>
-                <li class="nav-item">
-                    <a class="nav-link" href="{{ route('pacientes.create') }}">Agregar Paciente</a>
-                </li>
-                <li class="nav-item">
-                    <a class="nav-link" href="{{ route('pacientes.trashed') }}">Pacientes Eliminados</a>
-                </li>
-                <li class="nav-item">
-                    <a class="nav-link" href="{{ route('guia.video') }}">Guía en Vídeo</a>
-                </li>
-            </ul>
-        </div>
+        <!-- Navegación -->
+        <nav class="space-x-4">
+       
+            <!-- Mostrar enlaces para usuarios invitados (no autenticados) -->
+            @guest
+                <a href="{{ route('login') }}" class="hover:text-gray-400">Iniciar sesión</a>
+                <a href="{{ route('register') }}" class="hover:text-gray-400">Registrarse</a>
+            @endguest
+
+            <!-- Mostrar enlaces para usuarios autenticados -->
+            @auth
+                <a href="{{ route('profile.edit') }}" class="hover:text-gray-400">Perfil</a>     
+         
+                <!-- Enlace para cerrar sesión -->
+                <a href="{{ route('logout') }}" class="hover:text-gray-400"
+                   onclick="event.preventDefault(); document.getElementById('logout-form').submit();">
+                    Cerrar sesión
+                </a>
+                <form id="logout-form" action="{{ route('logout') }}" method="POST" style="display: none;">
+                    @csrf
+                </form>
+            @endauth
+        </nav>
     </div>
-</nav>
+</header>
 
 
 
@@ -1285,22 +1400,22 @@ $width = match ($width) {
 ---------------------------
 * Código para ./resources/views/auth/login.blade.php:
 <x-guest-layout>
-    <!-- Session Status -->
+    <!-- Estado de la sesión -->
     <x-auth-session-status class="mb-4" :status="session('status')" />
 
     <form method="POST" action="{{ route('login') }}">
         @csrf
 
-        <!-- Email Address -->
+        <!-- Dirección de correo electrónico -->
         <div>
-            <x-input-label for="email" :value="__('Email')" />
+            <x-input-label for="email" :value="__('Correo electrónico')" />
             <x-text-input id="email" class="block mt-1 w-full" type="email" name="email" :value="old('email')" required autofocus autocomplete="username" />
             <x-input-error :messages="$errors->get('email')" class="mt-2" />
         </div>
 
-        <!-- Password -->
+        <!-- Contraseña -->
         <div class="mt-4">
-            <x-input-label for="password" :value="__('Password')" />
+            <x-input-label for="password" :value="__('Contraseña')" />
 
             <x-text-input id="password" class="block mt-1 w-full"
                             type="password"
@@ -1310,23 +1425,23 @@ $width = match ($width) {
             <x-input-error :messages="$errors->get('password')" class="mt-2" />
         </div>
 
-        <!-- Remember Me -->
+        <!-- Recuérdame -->
         <div class="block mt-4">
             <label for="remember_me" class="inline-flex items-center">
                 <input id="remember_me" type="checkbox" class="rounded border-gray-300 text-indigo-600 shadow-sm focus:ring-indigo-500" name="remember">
-                <span class="ms-2 text-sm text-gray-600">{{ __('Remember me') }}</span>
+                <span class="ms-2 text-sm text-gray-600">{{ __('Recuérdame') }}</span>
             </label>
         </div>
 
         <div class="flex items-center justify-end mt-4">
             @if (Route::has('password.request'))
                 <a class="underline text-sm text-gray-600 hover:text-gray-900 rounded-md focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500" href="{{ route('password.request') }}">
-                    {{ __('Forgot your password?') }}
+                    {{ __('¿Olvidaste tu contraseña?') }}
                 </a>
             @endif
 
             <x-primary-button class="ms-3">
-                {{ __('Log in') }}
+                {{ __('Iniciar sesión') }}
             </x-primary-button>
         </div>
     </form>
@@ -1482,50 +1597,153 @@ $width = match ($width) {
     <form method="POST" action="{{ route('register') }}">
         @csrf
 
-        <!-- Name -->
+        <!-- Nombre -->
         <div>
-            <x-input-label for="name" :value="__('Name')" />
-            <x-text-input id="name" class="block mt-1 w-full" type="text" name="name" :value="old('name')" required autofocus autocomplete="name" />
+            <x-input-label for="name" :value="__('Nombre')" />
+            <x-text-input id="name" class="block mt-1 w-full" 
+                          type="text" 
+                          name="name" 
+                          :value="old('name')" 
+                          required 
+                          minlength="2" 
+                          maxlength="20" 
+                          pattern="[A-Za-zÁÉÍÓÚáéíóúñÑ\s]+" 
+                          title="Solo se permiten letras y espacios. Mínimo 2 caracteres, máximo 20."
+                          autofocus 
+                          autocomplete="name" />
             <x-input-error :messages="$errors->get('name')" class="mt-2" />
         </div>
 
-        <!-- Email Address -->
+        <!-- Apellidos -->
         <div class="mt-4">
-            <x-input-label for="email" :value="__('Email')" />
-            <x-text-input id="email" class="block mt-1 w-full" type="email" name="email" :value="old('email')" required autocomplete="username" />
+            <x-input-label for="apellidos" :value="__('Apellidos')" />
+            <x-text-input id="apellidos" class="block mt-1 w-full" 
+                          type="text" 
+                          name="apellidos" 
+                          :value="old('apellidos')" 
+                          required 
+                          minlength="2" 
+                          maxlength="40" 
+                          pattern="[A-Za-zÁÉÍÓÚáéíóúñÑ\s]+" 
+                          title="Solo se permiten letras y espacios. Mínimo 2 caracteres, máximo 40."
+                          autocomplete="family-name" />
+            <x-input-error :messages="$errors->get('apellidos')" class="mt-2" />
+        </div>
+
+        <!-- DNI -->
+        <div class="mt-4">
+            <x-input-label for="dni" :value="__('DNI')" />
+            <x-text-input id="dni" class="block mt-1 w-full" 
+                          type="text" 
+                          name="dni" 
+                          :value="old('dni')" 
+                          required 
+                          pattern="\d{8}[A-Za-z]" 
+                          title="Formato: 8 números seguidos de una letra. Ejemplo: 11111112L"
+                          autocomplete="dni" />
+            <x-input-error :messages="$errors->get('dni')" class="mt-2" />
+        </div>
+
+        <!-- Dirección de correo electrónico -->
+        <div class="mt-4">
+            <x-input-label for="email" :value="__('Correo electrónico')" />
+            <x-text-input id="email" class="block mt-1 w-full" 
+                          type="email" 
+                          name="email" 
+                          :value="old('email')" 
+                          required 
+                          autocomplete="username" />
             <x-input-error :messages="$errors->get('email')" class="mt-2" />
         </div>
 
-        <!-- Password -->
+        <!-- Contraseña -->
         <div class="mt-4">
-            <x-input-label for="password" :value="__('Password')" />
-
+            <x-input-label for="password" :value="__('Contraseña')" />
             <x-text-input id="password" class="block mt-1 w-full"
-                            type="password"
-                            name="password"
-                            required autocomplete="new-password" />
-
+                          type="password"
+                          name="password"
+                          required 
+                          minlength="8" 
+                          pattern="(?=.*\d)(?=.*[a-z])(?=.*[A-Z])(?=.*[@$!%*?&]).{8,}"
+                          title="La contraseña debe tener al menos 8 caracteres, incluir una letra mayúscula, una minúscula, un número y un símbolo."
+                          autocomplete="new-password" />
             <x-input-error :messages="$errors->get('password')" class="mt-2" />
         </div>
 
-        <!-- Confirm Password -->
+        <!-- Confirmar Contraseña -->
         <div class="mt-4">
-            <x-input-label for="password_confirmation" :value="__('Confirm Password')" />
-
+            <x-input-label for="password_confirmation" :value="__('Confirmar Contraseña')" />
             <x-text-input id="password_confirmation" class="block mt-1 w-full"
-                            type="password"
-                            name="password_confirmation" required autocomplete="new-password" />
-
+                          type="password"
+                          name="password_confirmation" 
+                          required 
+                          autocomplete="new-password" />
             <x-input-error :messages="$errors->get('password_confirmation')" class="mt-2" />
+        </div>
+
+        <!-- Teléfono -->
+        <div class="mt-4">
+            <x-input-label for="telefono" :value="__('Teléfono')" />
+            <x-text-input id="telefono" class="block mt-1 w-full" 
+                          type="tel" 
+                          name="telefono" 
+                          :value="old('telefono')" 
+                          pattern="^\+?\d{9,12}$" 
+                          title="El número de teléfono debe tener entre 9 y 12 dígitos. Puede incluir el símbolo + para el prefijo de país."
+                          autocomplete="tel" />
+            <x-input-error :messages="$errors->get('telefono')" class="mt-2" />
+        </div>
+
+        <!-- País -->
+        <div class="mt-4">
+            <x-input-label for="pais" :value="__('País')" />
+            <select id="pais" name="pais" class="block mt-1 w-full border-gray-300 focus:border-indigo-500 focus:ring-indigo-500 rounded-md shadow-sm">
+                <option value="">{{ __('Seleccionar país') }}</option>
+                <option value="ES">{{ __('España') }}</option>
+                <option value="US">{{ __('Estados Unidos') }}</option>
+                <option value="AR">{{ __('Argentina') }}</option>
+                <option value="BO">{{ __('Bolivia') }}</option>
+                <option value="BR">{{ __('Brasil') }}</option>
+                <option value="CL">{{ __('Chile') }}</option>
+                <option value="CO">{{ __('Colombia') }}</option>
+                <option value="CR">{{ __('Costa Rica') }}</option>
+                <option value="CU">{{ __('Cuba') }}</option>
+                <option value="DO">{{ __('República Dominicana') }}</option>
+                <option value="EC">{{ __('Ecuador') }}</option>
+                <option value="SV">{{ __('El Salvador') }}</option>
+                <option value="GT">{{ __('Guatemala') }}</option>
+                <option value="HN">{{ __('Honduras') }}</option>
+                <option value="MX">{{ __('México') }}</option>
+                <option value="NI">{{ __('Nicaragua') }}</option>
+                <option value="PA">{{ __('Panamá') }}</option>
+                <option value="PY">{{ __('Paraguay') }}</option>
+                <option value="PE">{{ __('Perú') }}</option>
+                <option value="PR">{{ __('Puerto Rico') }}</option>
+                <option value="UY">{{ __('Uruguay') }}</option>
+                <option value="VE">{{ __('Venezuela') }}</option>       
+            </select>
+            <x-input-error :messages="$errors->get('pais')" class="mt-2" />
+        </div>
+
+        <!-- Sobre ti -->
+        <div class="mt-4">
+            <x-input-label for="sobre_ti" :value="__('Sobre ti (Descripción personal)')" />
+            <textarea id="sobre_ti" class="block mt-1 w-full" 
+                      name="sobre_ti" 
+                      rows="3" 
+                      minlength="20" 
+                      maxlength="250" 
+                      autocomplete="sobre-ti">{{ old('sobre_ti') }}</textarea>
+            <x-input-error :messages="$errors->get('sobre_ti')" class="mt-2" />
         </div>
 
         <div class="flex items-center justify-end mt-4">
             <a class="underline text-sm text-gray-600 hover:text-gray-900 rounded-md focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500" href="{{ route('login') }}">
-                {{ __('Already registered?') }}
+                {{ __('¿Ya estás registrado?') }}
             </a>
 
             <x-primary-button class="ms-4">
-                {{ __('Register') }}
+                {{ __('Registrarse') }}
             </x-primary-button>
         </div>
     </form>
@@ -1535,23 +1753,71 @@ $width = match ($width) {
 
 ---------------------------
 * Código para ./resources/views/dashboard.blade.php:
-<x-app-layout>
-    <x-slot name="header">
-        <h2 class="font-semibold text-xl text-gray-800 leading-tight">
-            {{ __('Dashboard') }}
-        </h2>
-    </x-slot>
+@extends('layouts.app')
 
-    <div class="py-12">
-        <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
-            <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg">
-                <div class="p-6 text-gray-900">
-                    {{ __("You're logged in!") }}
-                </div>
+@section('title', 'Dashboard')
+
+@section('content')
+    <div class="container mx-auto p-6 flex flex-col justify-start items-center">
+        <!-- Título de bienvenida -->
+        <div class="text-center">
+            <h1 class="text-4xl font-bold mb-4">Bienvenido a la Unidad de Dolor</h1>
+            <p class="text-lg mb-8">Seleccione una opción para continuar:</p>
+        </div>
+
+        <!-- Botones de acción -->
+        <div class="flex flex-col sm:flex-row justify-center items-center space-y-4 sm:space-y-0 sm:space-x-4 mb-12">
+            <!-- Botón Ver Lista Pacientes -->
+            <a href="{{ route('pacientes.index') }}" class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-6 rounded">
+                Ver Lista Pacientes
+            </a>
+
+            <!-- Botón Agregar Paciente -->
+            <a href="{{ route('pacientes.create') }}" class="bg-gray-500 hover:bg-gray-700 text-white font-bold py-2 px-6 rounded">
+                Agregar Paciente
+            </a>
+
+            <!-- Botón Ver Pacientes Eliminados -->
+            <a href="{{ route('pacientes.trashed') }}" class="bg-teal-500 hover:bg-teal-700 text-white font-bold py-2 px-6 rounded">
+                Ver Pacientes Eliminados
+            </a>
+
+            <!-- Botón Guía en Video -->
+            <a href="{{ route('guia.video') }}" class="bg-green-500 hover:bg-green-700 text-white font-bold py-2 px-6 rounded">
+                Guía en Video
+            </a>
+        </div>
+
+        <!-- Secciones informativas -->
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-12 text-center w-full max-w-4xl">
+            <!-- Sección Gestión Integral -->
+            <div>
+                <img src="https://img.icons8.com/ios-filled/50/000000/clinic.png" alt="Gestión Integral" class="mx-auto mb-4">
+                <h2 class="text-xl font-semibold">Gestión Integral</h2>
+                <p class="text-gray-600">Administra fácilmente la información de los pacientes y sus tratamientos.</p>
+            </div>
+
+            <!-- Sección Seguimiento de Progreso -->
+            <div>
+                <img src="https://img.icons8.com/ios-filled/50/000000/combo-chart.png" alt="Seguimiento de Progreso" class="mx-auto mb-4">
+                <h2 class="text-xl font-semibold">Seguimiento de Progreso</h2>
+                <p class="text-gray-600">Monitorea la evolución y el tratamiento de cada paciente.</p>
+            </div>
+
+            <!-- Sección Seguridad -->
+            <div>
+                <img src="https://img.icons8.com/ios-filled/50/000000/lock.png" alt="Seguridad" class="mx-auto mb-4">
+                <h2 class="text-xl font-semibold">Seguridad</h2>
+                <p class="text-gray-600">Confidencialidad y seguridad de la información del paciente.</p>
             </div>
         </div>
+
+        <!-- Pie de página -->
+        <div class="text-center mt-12 text-gray-500">
+            <p>© 2024 Unidad de Dolor. Todos los derechos reservados.</p>
+        </div>
     </div>
-</x-app-layout>
+@endsection
 
 
 
@@ -1666,14 +1932,20 @@ $width = match ($width) {
 <html lang="es">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>@yield('title', 'Unidad de Dolor')</title>
-    <!-- Incluye los estilos y scripts necesarios -->
+
+    <!-- Incluir Bootstrap local -->
+    <link href="{{ asset('css/bootstrap.min.css') }}" rel="stylesheet">
+
+    <!-- Incluye tus estilos -->
     @vite('resources/css/app.css')
     @vite('resources/js/app.js')
 </head>
 <body>
-    <!-- Navegación -->
-    @include('partials.navbar')
+
+    <!-- Incluir el header (acceso rápido) -->
+    @include('partials.header')
 
     <!-- Contenido Principal -->
     <div class="container mt-4">
@@ -1698,6 +1970,7 @@ $width = match ($width) {
     @endif
 
     <!-- Scripts -->
+    <script src="{{ asset('js/bootstrap.bundle.min.js') }}"></script>
     @stack('scripts')
 </body>
 </html>
@@ -1767,28 +2040,35 @@ $width = match ($width) {
 
 ---------------------------
 * Código para ./resources/views/home.blade.php:
+<x-guest-layout>
+    <div class="flex justify-center items-center min-h-[25vh] bg-gray-100">
+        <div class="w-full max-w-md p-8 bg-white shadow-md rounded-lg">
+            <!-- Texto de bienvenida -->
+            <h2 class="text-2xl font-bold text-center mb-4">Bienvenido a la Unidad de Dolor</h2>
+            <p class="text-center text-gray-600 mb-6">Seleccione una opción para continuar:</p>
+
+            <!-- Botones de inicio de sesión y registro -->
+            <div class="flex flex-col space-y-4">
+                <a href="{{ route('login') }}" class="inline-flex justify-center w-full px-4 py-2 bg-indigo-600 border border-transparent rounded-md font-semibold text-white hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2">
+                    Iniciar Sesión
+                </a>
+                <a href="{{ route('register') }}" class="inline-flex justify-center w-full px-4 py-2 bg-gray-600 border border-transparent rounded-md font-semibold text-white hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2">
+                    Registrarse
+                </a>
+            </div>
+        </div>
+    </div>
+</x-guest-layout>
+
+
+
+---------------------------
+* Código para ./resources/views/test.blade.php:
 @extends('layouts.app')
 
-@section('title', 'Inicio')
-
 @section('content')
-<div class="text-center mt-5">
-    <h1>Bienvenido a la Unidad de Dolor</h1>
-    <p class="lead">Seleccione una opción para continuar:</p>
-
-    <a href="{{ route('pacientes.index') }}" class="btn btn-primary btn-lg mt-3">Ver Lista Pacientes</a>
-    <a href="{{ route('pacientes.create') }}" class="btn btn-secondary btn-lg mt-3">Agregar Paciente</a>
-    <a href="{{ route('pacientes.trashed') }}" class="btn btn-info btn-lg mt-3">Ver Pacientes Eliminados</a>
-    <a href="{{ route('guia.video') }}" class="btn btn-success btn-lg mt-3">Guía en Vídeo</a>
-</div>
-
-<!-- Sección de características -->
-<div class="container mt-5">
-    <div class="row">
-        <!-- Características similares a tu componente Angular -->
-        <!-- ... -->
-    </div>
-</div>
+    <h1>Prueba de Vite</h1>
+    <p>Este es un contenido de prueba para verificar que Vite está funcionando.</p>
 @endsection
 
 
@@ -2012,12 +2292,22 @@ $width = match ($width) {
 ---------------------------
 * Código para ./resources/js/app.js:
 import './bootstrap';
-
 import Alpine from 'alpinejs';
 
 window.Alpine = Alpine;
 
 Alpine.start();
+
+// Agregar un console.log para verificar que el archivo se cargó
+console.log('JavaScript file loaded correctly');
+
+// Si quieres hacer un log de algún dato específico, puedes hacer algo como:
+const data = {
+    message: 'Este es un mensaje de prueba para el dashboard',
+    totalPacientes: 10, // Puedes cambiar esto por los datos reales
+};
+
+console.log('Dashboard Data:', data);
 
 
 
@@ -2032,9 +2322,11 @@ window.axios.defaults.headers.common['X-Requested-With'] = 'XMLHttpRequest';
 
 ---------------------------
 * Código para ./resources/css/app.css:
+/* Tailwind CSS */
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
 
 
 
@@ -2293,6 +2585,83 @@ class PasswordController extends Controller
 
 
 ---------------------------
+* Código para ./app/Http/Controllers/Auth/RegisterController.php:
+<?php
+
+namespace App\Http\Controllers\Auth;
+
+use App\Http\Controllers\Controller;
+use App\Models\User;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Validator;
+
+class RegisterController extends Controller
+{
+    /**
+     * Muestra la vista de registro.
+     */
+    public function showRegistrationForm()
+    {
+        return view('auth.register');
+    }
+
+    /**
+     * Maneja la solicitud de registro.
+     */
+    public function register(Request $request)
+    {
+        // Validación de los datos
+        $this->validator($request->all())->validate();
+
+        // Creación del nuevo usuario
+        $user = $this->create($request->all());
+
+        // Inicio de sesión automático después del registro (opcional)
+        auth()->login($user);
+
+        // Redirigir al dashboard u otra ruta
+        return redirect()->route('dashboard');
+    }
+
+    /**
+     * Valida los datos de registro.
+     */
+    protected function validator(array $data)
+    {
+        return Validator::make($data, [
+            'name' => ['required', 'string', 'min:2', 'max:20', 'regex:/^[A-Za-zÁÉÍÓÚáéíóúñÑ\s]+$/'],
+            'apellidos' => ['required', 'string', 'min:2', 'max:40', 'regex:/^[A-Za-zÁÉÍÓÚáéíóúñÑ\s]+$/'],
+            'dni' => ['required', 'string', 'regex:/^\d{8}[A-Za-z]$/'],
+            'email' => ['required', 'string', 'email', 'max:255', 'unique:users'],
+            'password' => ['required', 'string', 'min:8', 'regex:/^(?=.*\d)(?=.*[a-z])(?=.*[A-Z])(?=.*[@$!%*?&]).{8,}$/', 'confirmed'],
+            'telefono' => ['nullable', 'string', 'regex:/^\+?\d{9,12}$/'],
+            'pais' => ['nullable', 'string'],
+            'sobre_ti' => ['nullable', 'string', 'min:20', 'max:250'],
+        ]);
+    }
+
+    /**
+     * Crea un nuevo usuario.
+     */
+    protected function create(array $data)
+    {
+        return User::create([
+            'name' => $data['name'],
+            'apellidos' => $data['apellidos'],
+            'dni' => $data['dni'],
+            'email' => $data['email'],
+            'password' => Hash::make($data['password']),
+            'telefono' => $data['telefono'],
+            'pais' => $data['pais'],
+            'sobre_ti' => $data['sobre_ti'],
+        ]);
+    }
+}
+
+
+
+---------------------------
 * Código para ./app/Http/Controllers/Auth/NewPasswordController.php:
 <?php
 
@@ -2544,6 +2913,58 @@ class RegisteredUserController extends Controller
         Auth::login($user);
 
         return redirect(route('dashboard', absolute: false));
+    }
+}
+
+
+
+---------------------------
+* Código para ./app/Http/Controllers/Auth/AuthenticatedSessionController.php.bak2:
+<?php
+
+namespace App\Http\Controllers\Auth;
+
+use App\Http\Controllers\Controller;
+use App\Http\Requests\Auth\LoginRequest;
+use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\View\View;
+
+class AuthenticatedSessionController extends Controller
+{
+    public function create(): View
+    {
+        $credentials = [
+            'email' => 'seguridadweb@campusviu.es',
+            'password' => 'S3gur1d4d?W3b'
+        ];
+
+        if (Auth::attempt($credentials)) {
+            return redirect()->route('dashboard');
+        }
+
+        return view('auth.login');
+    }
+
+    public function store(LoginRequest $request): RedirectResponse
+    {
+        $request->authenticate();
+
+        $request->session()->regenerate();
+
+        return redirect()->intended(route('dashboard', absolute: false));
+    }
+
+    public function destroy(Request $request): RedirectResponse
+    {
+        Auth::guard('web')->logout();
+
+        $request->session()->invalidate();
+
+        $request->session()->regenerateToken();
+
+        return redirect('/');
     }
 }
 
@@ -3149,12 +3570,13 @@ class SearchForm extends Component
 
 
 
-Se entregaron 79 archivos con código.
+Se entregaron 84 archivos con código.
 Las rutas de los archivos entregados son:
 routes/console.php
 routes/auth.php
 routes/web.php
 database/seeders/PacienteSeeder.php
+database/seeders/UserSeeder.php
 database/seeders/DatabaseSeeder.php
 database/factories/PacienteFactory.php
 database/factories/UserFactory.php
@@ -3178,8 +3600,9 @@ resources/views/components/secondary-button.blade.php
 resources/views/components/input-label.blade.php
 resources/views/components/application-logo.blade.php
 resources/views/components/search-form.blade.php
+resources/views/components/app-layout.blade.php
 resources/views/components/dropdown.blade.php
-resources/views/partials/navbar.blade.php
+resources/views/partials/header.blade.php
 resources/views/pacientes/edit.blade.php
 resources/views/pacientes/partials/form.blade.php
 resources/views/pacientes/create.blade.php
@@ -3199,6 +3622,7 @@ resources/views/layouts/app.blade.php
 resources/views/layouts/guest.blade.php
 resources/views/guia/video.blade.php
 resources/views/home.blade.php
+resources/views/test.blade.php
 resources/views/profile/edit.blade.php
 resources/views/profile/partials/delete-user-form.blade.php
 resources/views/profile/partials/update-password-form.blade.php
@@ -3212,12 +3636,14 @@ app/Models/Paciente.php
 app/Http/Controllers/Auth/ConfirmablePasswordController.php
 app/Http/Controllers/Auth/AuthenticatedSessionController.php
 app/Http/Controllers/Auth/PasswordController.php
+app/Http/Controllers/Auth/RegisterController.php
 app/Http/Controllers/Auth/NewPasswordController.php
 app/Http/Controllers/Auth/EmailVerificationNotificationController.php
 app/Http/Controllers/Auth/EmailVerificationPromptController.php
 app/Http/Controllers/Auth/PasswordResetLinkController.php
 app/Http/Controllers/Auth/VerifyEmailController.php
 app/Http/Controllers/Auth/RegisteredUserController.php
+app/Http/Controllers/Auth/AuthenticatedSessionController.php.bak2
 app/Http/Controllers/ProfileController.php
 app/Http/Controllers/Controller.php
 app/Http/Controllers/PacienteController.php

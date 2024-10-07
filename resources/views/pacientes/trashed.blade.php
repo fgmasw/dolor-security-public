@@ -3,63 +3,67 @@
 @section('title', 'Pacientes Eliminados')
 
 @section('content')
-<div class="container mt-5">
-    <h2>Pacientes Eliminados</h2>
+<div class="container mx-auto mt-5">
+    <h2 class="text-2xl font-bold mb-4">Pacientes Eliminados</h2>
 
     <!-- Tabla de pacientes eliminados -->
-    <div class="table-responsive" @if($pacientes->count() > 0) else @endif>
-        <table class="table">
-            <thead>
+    <div class="overflow-x-auto">
+        <table class="min-w-full bg-white border border-gray-300">
+            <thead class="bg-gray-200">
                 <tr>
                     <!-- Encabezados -->
-                    <th>#</th>
-                    <th>Nombre</th>
-                    <th>Edad</th>
-                    <th>Cama Hospitalización</th>
-                    <th>Diagnóstico</th>
-                    <th>Cirujano</th>
-                    <th>Acciones</th>
+                    <th class="py-2 px-4 border">#</th>
+                    <th class="py-2 px-4 border">Nombre</th>
+                    <th class="py-2 px-4 border">Edad</th>
+                    <th class="py-2 px-4 border">Cama Hospitalización</th>
+                    <th class="py-2 px-4 border">Diagnóstico</th>
+                    <th class="py-2 px-4 border">Cirujano</th>
+                    <th class="py-2 px-4 border">Acciones</th>
                 </tr>
             </thead>
             <tbody>
-                @foreach($pacientes as $paciente)
-                <tr>
-                    <td>{{ $loop->iteration }}</td>
-                    <td>{{ $paciente->nombre }}</td>
-                    <td>{{ $paciente->edad }}</td>
-                    <td>{{ $paciente->cama_hospitalizacion }}</td>
-                    <td>{{ $paciente->diagnostico }}</td>
-                    <td>{{ $paciente->cirujano }}</td>
-                    <td>
+                @forelse($pacientes as $paciente)
+                <tr class="hover:bg-gray-100">
+                    <td class="py-2 px-4 border">{{ $loop->iteration }}</td>
+                    <td class="py-2 px-4 border">{{ $paciente->nombre }}</td>
+                    <td class="py-2 px-4 border">{{ $paciente->edad }}</td>
+                    <td class="py-2 px-4 border">{{ $paciente->cama_hospitalizacion }}</td>
+                    <td class="py-2 px-4 border">{{ $paciente->diagnostico }}</td>
+                    <td class="py-2 px-4 border">{{ $paciente->cirujano }}</td>
+                    <td class="py-2 px-4 border">
                         <!-- Botones para restaurar y eliminar permanentemente -->
-                        <form action="{{ route('pacientes.restore', $paciente->id) }}" method="POST" style="display:inline-block;">
+                        <form action="{{ route('pacientes.restore', $paciente->id) }}" method="POST" class="inline-block">
                             @csrf
                             @method('PATCH')
-                            <button class="btn btn-primary btn-sm" type="submit">Restaurar</button>
+                            <button class="bg-blue-500 text-white px-2 py-1 rounded hover:bg-blue-700" type="submit">Restaurar</button>
                         </form>
 
-                        <form action="{{ route('pacientes.forceDelete', $paciente->id) }}" method="POST" style="display:inline-block;">
+                        <form action="{{ route('pacientes.forceDelete', $paciente->id) }}" method="POST" class="inline-block">
                             @csrf
                             @method('DELETE')
-                            <button class="btn btn-danger btn-sm" type="submit" onclick="return confirm('¿Estás seguro de eliminar permanentemente este paciente?')">Eliminar Permanentemente</button>
+                            <button class="bg-red-500 text-white px-2 py-1 rounded hover:bg-red-700" type="submit" onclick="return confirm('¿Estás seguro de eliminar permanentemente este paciente?')">Eliminar Permanentemente</button>
                         </form>
                     </td>
                 </tr>
-                @endforeach
+                @empty
+                <!-- Mensaje si no hay pacientes eliminados -->
+                <tr>
+                    <td colspan="7" class="text-center py-4">
+                        <div class="bg-blue-100 text-blue-800 p-4 rounded">
+                            No hay pacientes eliminados.
+                        </div>
+                    </td>
+                </tr>
+                @endforelse
             </tbody>
         </table>
     </div>
 
-    <!-- Mensaje si no hay pacientes eliminados -->
-    @if($pacientes->count() == 0)
-        <div class="alert alert-info" role="alert">
-            No hay pacientes eliminados.
-        </div>
-    @endif
-
     <!-- Paginación -->
+    @if ($pacientes->hasPages())
     <div class="mt-4">
         {{ $pacientes->links() }}
     </div>
+    @endif
 </div>
 @endsection
