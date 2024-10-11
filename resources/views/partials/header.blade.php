@@ -27,7 +27,7 @@
                 <a href="{{ route('pacientes.trashed') }}" class="hover:text-gray-400">Pacientes Eliminados</a>
 
                 <!-- Enlace al Perfil de Usuario -->
-                <a href="{{ route('profile.edit') }}" class="hover:text-gray-400">Perfil</a>
+                <a href="{{ route('profile.edit') }}" class="hover:text-gray-400">Mi Perfil</a>
          
                 <!-- Enlace para cerrar sesión -->
                 <a href="{{ route('logout') }}" class="hover:text-gray-400"
