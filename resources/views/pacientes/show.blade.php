@@ -14,7 +14,56 @@
             <label class="block font-medium text-gray-700">Nombre:</label>
             <input type="text" class="w-full border-gray-300 rounded-md shadow-sm" value="{{ $paciente->nombre }}" readonly>
         </div>
-        <!-- Agrega más campos según sea necesario -->
+
+        <div class="mb-4">
+            <label class="block font-medium text-gray-700">Edad:</label>
+            <input type="text" class="w-full border-gray-300 rounded-md shadow-sm" value="{{ $paciente->edad }}" readonly>
+        </div>
+
+        <div class="mb-4">
+            <label class="block font-medium text-gray-700">RUT:</label>
+            <input type="text" class="w-full border-gray-300 rounded-md shadow-sm" value="{{ $paciente->rut }}" readonly>
+        </div>
+
+        <div class="mb-4">
+            <label class="block font-medium text-gray-700">Previsión:</label>
+            <input type="text" class="w-full border-gray-300 rounded-md shadow-sm" value="{{ $paciente->prevision }}" readonly>
+        </div>
+
+        <div class="mb-4">
+            <label class="block font-medium text-gray-700">Cama de Hospitalización:</label>
+            <input type="text" class="w-full border-gray-300 rounded-md shadow-sm" value="{{ $paciente->cama_hospitalizacion }}" readonly>
+        </div>
+
+        <div class="mb-4">
+            <label class="block font-medium text-gray-700">Diagnóstico:</label>
+            <input type="text" class="w-full border-gray-300 rounded-md shadow-sm" value="{{ $paciente->diagnostico }}" readonly>
+        </div>
+
+        <div class="mb-4">
+            <label class="block font-medium text-gray-700">Cirujano:</label>
+            <input type="text" class="w-full border-gray-300 rounded-md shadow-sm" value="{{ $paciente->cirujano }}" readonly>
+        </div>
+
+        <div class="mb-4">
+            <label class="block font-medium text-gray-700">Cirugía:</label>
+            <input type="text" class="w-full border-gray-300 rounded-md shadow-sm" value="{{ $paciente->cirugia }}" readonly>
+        </div>
+
+        <div class="mb-4">
+            <label class="block font-medium text-gray-700">Tratamiento (Modalidad):</label>
+            <input type="text" class="w-full border-gray-300 rounded-md shadow-sm" value="{{ $paciente->tratamiento_modalidad ?? 'No registrado' }}" readonly>
+        </div>
+
+        <div class="mb-4">
+            <label class="block font-medium text-gray-700">Tratamiento (Medicamento):</label>
+            <input type="text" class="w-full border-gray-300 rounded-md shadow-sm" value="{{ $paciente->tratamiento_medicamento ?? 'No registrado' }}" readonly>
+        </div>
+
+        <div class="mb-4">
+            <label class="block font-medium text-gray-700">Tipo de Bloqueo:</label>
+            <input type="text" class="w-full border-gray-300 rounded-md shadow-sm" value="{{ $paciente->tipo_bloqueo ?? 'No registrado' }}" readonly>
+        </div>
 
         <!-- Factores de Riesgo -->
         <h6 class="text-lg font-semibold mb-3 mt-6">Factores de Riesgo</h6>
@@ -22,7 +71,7 @@
         @if($paciente->factores_riesgo)
             @foreach($paciente->factores_riesgo as $key => $value)
                 <div class="mb-4">
-                    <label class="block font-medium text-gray-700">{{ $key }}:</label>
+                    <label class="block font-medium text-gray-700">{{ ucfirst($key) }}:</label>
                     <input type="text" class="w-full border-gray-300 rounded-md shadow-sm" value="{{ $value }}" readonly>
                 </div>
             @endforeach
@@ -39,15 +88,6 @@
             @method('DELETE')
             <button class="bg-red-500 text-white py-2 px-4 rounded hover:bg-red-700 w-full" type="submit" onclick="return confirm('¿Estás seguro de eliminar este paciente?')">Eliminar Paciente</button>
         </form>
-
-        <!-- Botón para terminar tratamiento -->
-        @if($paciente->activo)
-        <form action="{{ route('pacientes.terminarTratamiento', $paciente) }}" method="POST">
-            @csrf
-            @method('PUT')
-            <button class="bg-yellow-500 text-white py-2 px-4 rounded hover:bg-yellow-700 w-full" type="submit" onclick="return confirm('¿Estás seguro de terminar el tratamiento?')">Terminar Tratamiento</button>
-        </form>
-        @endif
 
         <!-- Botón para editar paciente -->
         <a href="{{ route('pacientes.edit', $paciente) }}" class="bg-blue-500 text-white py-2 px-4 rounded hover:bg-blue-700 w-full">Editar Paciente</a>

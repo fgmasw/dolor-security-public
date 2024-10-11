@@ -17,7 +17,17 @@
 
             <!-- Mostrar enlaces para usuarios autenticados -->
             @auth
-                <a href="{{ route('profile.edit') }}" class="hover:text-gray-400">Perfil</a>     
+                <!-- Enlace al Dashboard -->
+                <a href="{{ route('dashboard') }}" class="hover:text-gray-400">Dashboard</a>
+
+                <!-- Enlace a la Lista de Pacientes -->
+                <a href="{{ route('pacientes.index') }}" class="hover:text-gray-400">Pacientes</a>
+
+                <!-- Enlace a la Lista de Pacientes Eliminados -->
+                <a href="{{ route('pacientes.trashed') }}" class="hover:text-gray-400">Pacientes Eliminados</a>
+
+                <!-- Enlace al Perfil de Usuario -->
+                <a href="{{ route('profile.edit') }}" class="hover:text-gray-400">Perfil</a>
          
                 <!-- Enlace para cerrar sesión -->
                 <a href="{{ route('logout') }}" class="hover:text-gray-400"

@@ -30,19 +30,21 @@ class PacienteController extends Controller
                          ->orWhere('cirujano', 'LIKE', "%{$searchTerm}%")
                          ->orWhere('cirugia', 'LIKE', "%{$searchTerm}%")
                          ->orWhereJsonContains('factores_riesgo', $searchTerm);
-                // Agrega más campos si es necesario
             });
         }
 
-        // Filtros específicos, excluyendo ciertos parámetros de control como 'q', 'page' y 'per_page'
-        $excludedParams = ['q', 'page', 'per_page'];
+        // Filtros específicos, excluyendo ciertos parámetros de control como 'q', 'page', 'per_page', 'field'
+        $excludedParams = ['q', 'page', 'per_page', 'field'];
         foreach ($request->except($excludedParams) as $key => $value) {
             if ($key === 'factores_riesgo') {
                 $query->whereJsonContains('factores_riesgo', $value);
-            } elseif (in_array($key, ['edad', 'activo'])) {
+            } elseif (in_array($key, ['edad'])) {
                 $query->where($key, $value);
             } else {
-                $query->where($key, 'LIKE', '%' . $value . '%');
+                // Asegurarse de que el campo existe en la tabla antes de agregar el filtro
+                if (in_array($key, ['nombre', 'rol', 'rut', 'prevision', 'diagnostico', 'cirujano', 'cirugia'])) {
+                    $query->where($key, 'LIKE', '%' . $value . '%');
+                }
             }
         }
 
@@ -78,7 +80,6 @@ class PacienteController extends Controller
             'tipo_bloqueo' => 'nullable|string',
             'factores_riesgo' => 'nullable|array',
             'fecha_termino' => 'nullable|date',
-            'activo' => 'boolean',
         ]);
 
         // Crear un nuevo paciente con los datos validados
@@ -119,7 +120,6 @@ class PacienteController extends Controller
             'tipo_bloqueo' => 'nullable|string',
             'factores_riesgo' => 'nullable|array',
             'fecha_termino' => 'nullable|date',
-            'activo' => 'boolean',
         ]);
 
         // Actualizar el paciente con los datos validados
@@ -136,19 +136,6 @@ class PacienteController extends Controller
 
         // Redirigir al listado con mensaje de éxito
         return redirect()->route('pacientes.index')->with('success', 'Paciente eliminado con éxito');
-    }
-
-    // Método para terminar el tratamiento de un paciente
-    public function terminarTratamiento(Paciente $paciente)
-    {
-        // Actualizar el paciente con la fecha de término del tratamiento y desactivarlo
-        $paciente->update([
-            'fecha_termino' => now(),
-            'activo' => false,
-        ]);
-
-        // Redirigir al detalle del paciente con mensaje de éxito
-        return redirect()->route('pacientes.show', $paciente)->with('success', 'Tratamiento terminado con éxito');
     }
 
     // Mostrar lista de pacientes eliminados (soft deleted)

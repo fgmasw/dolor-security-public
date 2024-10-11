@@ -28,12 +28,13 @@ Route::middleware(['auth'])->group(function () {
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
 
+    Route::get('pacientes/trashed', [PacienteController::class, 'trashed'])->name('pacientes.trashed');
+
+
     // Rutas para los recursos de pacientes
     Route::resource('pacientes', PacienteController::class);
 
     // Rutas adicionales relacionadas con pacientes
-    Route::get('pacientes/trashed', [PacienteController::class, 'trashed'])->name('pacientes.trashed');
-    Route::put('pacientes/{id}/terminar-tratamiento', [PacienteController::class, 'terminarTratamiento'])->name('pacientes.terminarTratamiento');
     Route::patch('pacientes/{id}/restore', [PacienteController::class, 'restore'])->name('pacientes.restore');
     Route::delete('pacientes/{id}/force-delete', [PacienteController::class, 'forceDelete'])->name('pacientes.forceDelete');
 });

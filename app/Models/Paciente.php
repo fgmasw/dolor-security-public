@@ -26,7 +26,6 @@ class Paciente extends Model
         'tipo_bloqueo',  // Tipo de bloqueo utilizado (opcional)
         'factores_riesgo',  // Factores de riesgo asociados al paciente (almacenado como JSON)
         'fecha_termino',  // Fecha de término del tratamiento (puede ser null si no ha terminado)
-        'activo',  // Indica si el paciente está activo o no (booleano)
     ];
 
     // Definición de cómo se deben convertir los atributos al recuperar los datos de la base de datos

@@ -6,9 +6,7 @@
 <div class="container mx-auto mt-5">
     <h2 class="text-2xl font-bold mb-4">Lista de Pacientes</h2>
 
-    <div class="mb-4 flex gap-2">
-        <a href="{{ route('pacientes.index', ['activo' => 1]) }}" class="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-700">Ver Activos</a>
-        <a href="{{ route('pacientes.index', ['activo' => 0]) }}" class="bg-gray-500 text-white px-4 py-2 rounded hover:bg-gray-700">Ver Inactivos</a>
+    <div class="mb-4 flex gap-2"> 
         <a href="{{ route('pacientes.create') }}" class="bg-green-500 text-white px-4 py-2 rounded hover:bg-green-700">Agregar Paciente</a>
     </div>
 
@@ -27,7 +25,18 @@
         ];
     @endphp
 
-    <x-search-form :fields="$fields" :selectedField="request('field')" :searchTerm="request('q')" />
+    <!-- Formulario de búsqueda actualizado con botón rojo -->
+    <form action="{{ route('pacientes.index') }}" method="GET" class="flex gap-2 mb-4">
+        <select name="field" class="border border-gray-300 rounded px-4 py-2">
+            @foreach($fields as $fieldKey => $fieldLabel)
+                <option value="{{ $fieldKey }}" {{ request('field') == $fieldKey ? 'selected' : '' }}>
+                    {{ $fieldLabel }}
+                </option>
+            @endforeach
+        </select>
+        <input type="text" name="q" value="{{ request('q') }}" class="border border-gray-300 rounded px-4 py-2" placeholder="Buscar...">
+        <button type="submit" class="bg-red-500 text-white px-4 py-2 rounded hover:bg-red-700">Buscar</button>
+    </form>
 
     <!-- Tabla de pacientes -->
     <table class="min-w-full bg-white border border-gray-300 mt-6">
