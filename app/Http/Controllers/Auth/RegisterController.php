@@ -59,7 +59,8 @@ class RegisterController extends Controller
             'dni' => [
                 'required', 
                 'string', 
-                'regex:/^\d{8}[A-Za-z]$/'
+                'regex:/^\d{8}[A-Za-z]$/',
+                'unique:users'
             ],
             'email' => [
                 'required', 
@@ -71,8 +72,8 @@ class RegisterController extends Controller
             'password' => [
                 'required', 
                 'string', 
-                'min:8', 
-                'regex:/^(?=.*\d)(?=.*[a-z])(?=.*[A-Z])(?=.*[@$!%*?&]).{8,}$/', 
+                'min:10', 
+                'regex:/^(?=.*\d)(?=.*[a-z])(?=.*[A-Z])(?=.*[@$!%*?&]).{10,}$/', 
                 'confirmed'
             ],
             'telefono' => [
@@ -111,13 +112,14 @@ class RegisterController extends Controller
 
             'dni.required' => 'El DNI es obligatorio.',
             'dni.regex' => 'El formato del DNI no es válido. Debe contener 8 números seguidos de una letra (Ej: 12345678A).',
+            'dni.unique' => 'Este DNI ya está registrado.',
 
             'email.required' => 'El correo electrónico es obligatorio.',
             'email.email' => 'El formato del correo electrónico no es válido.',
             'email.unique' => 'El correo electrónico ya está registrado.',
 
             'password.required' => 'La contraseña es obligatoria.',
-            'password.min' => 'La contraseña debe tener al menos 8 caracteres.',
+            'password.min' => 'La contraseña debe tener al menos 10 caracteres.',
             'password.regex' => 'La contraseña debe incluir una letra mayúscula, una minúscula, un número y un símbolo.',
             'password.confirmed' => 'La confirmación de la contraseña no coincide.',
 

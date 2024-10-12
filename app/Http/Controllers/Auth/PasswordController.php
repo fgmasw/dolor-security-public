@@ -25,7 +25,7 @@ class PasswordController extends Controller
             'password' => [
                 'required', 
                 'confirmed', 
-                Password::min(8)
+                Password::min(10)
                     ->letters()
                     ->mixedCase()
                     ->numbers()
@@ -37,7 +37,7 @@ class PasswordController extends Controller
             'current_password.current_password' => 'La contraseña actual no es correcta.',
             'password.required' => 'El campo de la nueva contraseña es obligatorio.',
             'password.confirmed' => 'Las contraseñas no coinciden.',
-            'password.min' => 'La nueva contraseña debe tener al menos 8 caracteres.',
+            'password.min' => 'La nueva contraseña debe tener al menos 10 caracteres.',
             'password.letters' => 'La nueva contraseña debe contener al menos una letra.',
             'password.mixedCase' => 'La nueva contraseña debe contener letras mayúsculas y minúsculas.',
             'password.numbers' => 'La nueva contraseña debe incluir al menos un número.',

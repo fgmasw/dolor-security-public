@@ -13,10 +13,17 @@ class ProfileUpdateRequest extends FormRequest
      *
      * @return array<string, \Illuminate\Contracts\Validation\Rule|array|string>
      */
+
+
     public function rules(): array
     {
         return [
             'name' => ['required', 'string', 'max:255'],
+            'apellidos' => ['required', 'string', 'max:255'],  // Regla para apellidos
+            'dni' => ['required', 'string', 'regex:/^\d{8}[A-Za-z]$/'],  // Regla para DNI (formato español)
+            'telefono' => ['nullable', 'string', 'regex:/^\+?\d{9,12}$/'],  // Regla para teléfono
+            'pais' => ['required', 'string', 'max:2'],  // Regla para país (código de 2 letras)
+            'sobre_ti' => ['nullable', 'string', 'max:250'],  // Regla para descripción personal
             'email' => [
                 'required',
                 'string',
@@ -26,7 +33,7 @@ class ProfileUpdateRequest extends FormRequest
             ],
         ];
     }
-
+    
     /**
      * Get custom messages for validator errors.
      *

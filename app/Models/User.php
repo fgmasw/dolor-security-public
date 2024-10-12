@@ -20,6 +20,11 @@ class User extends Authenticatable
         'name',
         'email',
         'password',
+        'apellidos',  // Agregar apellidos
+        'dni',        // Agregar DNI
+        'pais',       // Agregar país
+        'telefono',   // Agregar teléfono
+        'sobre_ti',   // Agregar sobre_ti
     ];
 
     /**

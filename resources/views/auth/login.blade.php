@@ -17,7 +17,7 @@
                 :value="old('email')" 
                 required 
                 autofocus 
-                autocomplete="username" 
+                autocomplete="email" 
             />
             @if ($errors->has('email'))
                 <div class="mt-2 text-red-600">
@@ -51,10 +51,23 @@
             </div>
         @endif
 
-        <div class="flex items-center justify-end mt-4">
+        <div class="flex items-center justify-between mt-4">
+            <!-- Botón de inicio de sesión -->
             <x-primary-button class="ml-3">
                 {{ __('Iniciar sesión') }}
             </x-primary-button>
+
+            <!-- Botón para redirigir al registro o al home -->
+            <a href="{{ route('register') }}" class="underline text-sm text-gray-600 hover:text-gray-900">
+                {{ __('¿No tienes una cuenta? Regístrate') }}
+            </a>
+        </div>
+
+        <!-- Opción para ir a home.blade.php -->
+        <div class="flex items-center justify-end mt-4">
+            <a href="{{ route('home') }}" class="underline text-sm text-gray-600 hover:text-gray-900">
+                {{ __('Ir a la página principal') }}
+            </a>
         </div>
     </form>
 </x-guest-layout>

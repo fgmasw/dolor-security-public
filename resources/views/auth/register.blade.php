@@ -1,10 +1,12 @@
+<!-- resources/views/auth/register.blade.php -->
+
 <x-guest-layout>
     <form method="POST" action="{{ route('register') }}">
         @csrf
 
         <!-- Nombre -->
         <div>
-            <x-input-label for="name" :value="__('Nombre')" />
+            <x-input-label for="name" :value="__('Nombre*')" />
             <x-text-input id="name" class="block mt-1 w-full @error('name') border-red-500 @enderror" 
                           type="text" 
                           name="name" 
@@ -21,7 +23,7 @@
 
         <!-- Apellidos -->
         <div class="mt-4">
-            <x-input-label for="apellidos" :value="__('Apellidos')" />
+            <x-input-label for="apellidos" :value="__('Apellidos*')" />
             <x-text-input id="apellidos" class="block mt-1 w-full @error('apellidos') border-red-500 @enderror" 
                           type="text" 
                           name="apellidos" 
@@ -37,7 +39,7 @@
 
         <!-- DNI -->
         <div class="mt-4">
-            <x-input-label for="dni" :value="__('DNI')" />
+            <x-input-label for="dni" :value="__('DNI*')" />
             <x-text-input id="dni" class="block mt-1 w-full @error('dni') border-red-500 @enderror" 
                           type="text" 
                           name="dni" 
@@ -51,33 +53,33 @@
 
         <!-- Dirección de correo electrónico -->
         <div class="mt-4">
-            <x-input-label for="email" :value="__('Correo electrónico')" />
+            <x-input-label for="email" :value="__('Correo electrónico*')" />
             <x-text-input id="email" class="block mt-1 w-full @error('email') border-red-500 @enderror" 
                           type="email" 
                           name="email" 
                           :value="old('email')" 
                           required 
-                          autocomplete="username" />
+                          autocomplete="email" />
             <x-input-error :messages="$errors->get('email')" class="mt-2" />
         </div>
 
         <!-- Contraseña -->
         <div class="mt-4">
-            <x-input-label for="password" :value="__('Contraseña')" />
+            <x-input-label for="password" :value="__('Contraseña*')" />
             <x-text-input id="password" class="block mt-1 w-full @error('password') border-red-500 @enderror"
                           type="password"
                           name="password"
                           required 
-                          minlength="8" 
-                          pattern="(?=.*\d)(?=.*[a-z])(?=.*[A-Z])(?=.*[@$!%*?&]).{8,}"
-                          title="La contraseña debe tener al menos 8 caracteres, incluir una letra mayúscula, una minúscula, un número y un símbolo."
+                          minlength="10" 
+                          pattern="(?=.*\d)(?=.*[a-z])(?=.*[A-Z])(?=.*[@$!%*?&]).{10,}"
+                          title="La contraseña debe tener al menos 10 caracteres, incluir una letra mayúscula, una minúscula, un número y un símbolo."
                           autocomplete="new-password" />
             <x-input-error :messages="$errors->get('password')" class="mt-2" />
         </div>
 
         <!-- Confirmar Contraseña -->
         <div class="mt-4">
-            <x-input-label for="password_confirmation" :value="__('Confirmar Contraseña')" />
+            <x-input-label for="password_confirmation" :value="__('Confirmar Contraseña*')" />
             <x-text-input id="password_confirmation" class="block mt-1 w-full @error('password_confirmation') border-red-500 @enderror"
                           type="password"
                           name="password_confirmation" 
@@ -142,14 +144,23 @@
             <x-input-error :messages="$errors->get('sobre_ti')" class="mt-2" />
         </div>
 
-        <div class="flex items-center justify-end mt-4">
+        <div class="flex items-center justify-between mt-4">
+            <!-- Enlace para iniciar sesión si ya está registrado -->
             <a class="underline text-sm text-gray-600 hover:text-gray-900 rounded-md focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500" href="{{ route('login') }}">
                 {{ __('¿Ya estás registrado?') }}
             </a>
 
+            <!-- Botón de registro -->
             <x-primary-button class="ms-4">
                 {{ __('Registrarse') }}
             </x-primary-button>
+        </div>
+
+        <!-- Opción para ir a home.blade.php -->
+        <div class="flex items-center justify-end mt-4">
+            <a href="{{ route('home') }}" class="underline text-sm text-gray-600 hover:text-gray-900">
+                {{ __('Ir a la página principal') }}
+            </a>
         </div>
     </form>
 </x-guest-layout>
