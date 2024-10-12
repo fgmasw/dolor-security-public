@@ -15,7 +15,7 @@ class AppServiceProvider extends ServiceProvider
      */
     public function register(): void
     {
-        //
+        Log::info('AppServiceProvider: Register method called.');
     }
 
     /**
@@ -23,25 +23,25 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
+        Log::info('AppServiceProvider: Boot method called.');
+        
         RateLimiter::for('login', function (Request $request) {
             $key = strtolower($request->input('email')).'|'.$request->ip();
-
-            Log::info('Initializing rate limit for '.$key);
+            Log::info('AppServiceProvider: Checking rate limiter for key: '.$key);
 
             if (RateLimiter::tooManyAttempts($key, 2)) {
                 $seconds = RateLimiter::availableIn($key);
-                Log::info('User '.$key.' blocked for '.$seconds.' seconds (should be 10800)');
+                Log::info('AppServiceProvider: User '.$key.' is blocked for '.$seconds.' seconds.');
 
                 return Limit::none()->response(function () use ($seconds) {
-                    Log::info('Returning rate limit response, blocking user for '.$seconds.' seconds.');
                     return response()->json([
-                        'message' => 'Has superado el límite de 2 intentos fallidos. La cuenta está bloqueada por 10800 segundos.'
+                        'message' => __('auth.throttle', ['seconds' => $seconds]),
                     ], 429);
-                })->retryAfter(10800); // Tiempo de bloqueo de 10800 segundos
+                });
             }
 
-            Log::info('Incrementing login attempt for '.$key);
-            RateLimiter::hit($key, 10800); // Tiempo de bloqueo de 10800 segundos
+            Log::info('AppServiceProvider: Incrementing login attempts for key: '.$key);
+            return Limit::perMinute(5);
         });
     }
 }

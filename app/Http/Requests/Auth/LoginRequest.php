@@ -17,16 +17,16 @@ class LoginRequest extends FormRequest
      */
     public function authorize(): bool
     {
+        Log::info("LoginRequest: authorize method called.");
         return true;
     }
 
     /**
      * Get the validation rules that apply to the request.
-     *
-     * @return array<string, \Illuminate\Contracts\Validation\Rule|array|string>
      */
     public function rules(): array
     {
+        Log::info("LoginRequest: Setting validation rules for email and password.");
         return [
             'email' => ['required', 'string', 'email'],
             'password' => ['required', 'string'],
@@ -35,49 +35,59 @@ class LoginRequest extends FormRequest
 
     /**
      * Attempt to authenticate the request's credentials.
-     *
-     * @throws \Illuminate\Validation\ValidationException
      */
     public function authenticate(): void
     {
+        Log::info("LoginRequest: authenticate method called for user: ".$this->input('email'));
         $this->ensureIsNotRateLimited();
 
-        Log::info('Attempting to authenticate '.$this->input('email'));
-        
         if (!Auth::attempt($this->only('email', 'password'), $this->boolean('remember'))) {
-            Log::warning('Login attempt failed for user: '.$this->input('email'));
-            RateLimiter::hit($this->throttleKey(), 10800); // Tiempo de bloqueo
+            Log::warning("LoginRequest: Authentication failed for user: ".$this->input('email'));
 
+            RateLimiter::hit($this->throttleKey(), 10800);
+            Log::info('LoginRequest: Rate limiter hit for user: '.$this->input('email'));
+
+            $attemptsLeft = 2 - RateLimiter::attempts($this->throttleKey());
+            Log::info('LoginRequest: Number of attempts left for user: '.$attemptsLeft);
+
+            if ($attemptsLeft > 0) {
+                Log::info("LoginRequest: Throwing validation warning with {$attemptsLeft} attempt(s) left.");
+                throw ValidationException::withMessages([
+                    'email' => __('auth.failed_with_attempts', ['attempts' => $attemptsLeft]),
+                ]);
+            }
+
+            Log::info("LoginRequest: No attempts left. Blocking user: ".$this->input('email'));
             throw ValidationException::withMessages([
-                'email' => __('Credenciales no válidas'),
+                'message' => __('auth.throttle', ['seconds' => 10800]),
             ]);
         }
 
-        Log::info('Login successful for user: '.$this->input('email'));
+        Log::info("LoginRequest: Authentication successful for user: ".$this->input('email'));
         RateLimiter::clear($this->throttleKey());
+        Log::info('LoginRequest: Rate limiter cleared for user: '.$this->input('email'));
     }
 
     /**
      * Ensure the login request is not rate limited.
-     *
-     * @throws \Illuminate\Validation\ValidationException
      */
     public function ensureIsNotRateLimited(): void
     {
+        Log::info("LoginRequest: ensureIsNotRateLimited method called.");
         $key = $this->throttleKey();
-        Log::info('Checking rate limiting for '.$key);
+        Log::info('LoginRequest: Checking rate limiting for key: '.$key);
 
         if (RateLimiter::tooManyAttempts($key, 2)) {
             $seconds = RateLimiter::availableIn($key);
-            Log::info('Limit reached, blocking user '.$key.' for '.$seconds.' seconds');
+            Log::info('LoginRequest: User '.$key.' blocked for '.$seconds.' seconds.');
+
+            event(new Lockout($this));
 
             throw ValidationException::withMessages([
-                'email' => __('auth.throttle', [ // Tiempo bloqueado en segundos
-                    'seconds' => $seconds,
-                ]),
-                'message' => 'Has superado el límite de 2 intentos fallidos. La cuenta está bloqueada por 10800 segundos.',
+                'message' => __('auth.throttle', ['seconds' => $seconds]),
             ]);
         }
+        Log::info("LoginRequest: User has not exceeded the rate limit.");
     }
 
     /**
@@ -85,6 +95,7 @@ class LoginRequest extends FormRequest
      */
     public function throttleKey(): string
     {
-        return Str::transliterate(Str::lower($this->input('email')).'|'.$this->ip());
+        Log::info("LoginRequest: throttleKey method called.");
+        return Str::lower($this->input('email')).'|'.$this->ip();
     }
 }

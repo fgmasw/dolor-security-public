@@ -19,7 +19,7 @@ class AuthenticatedSessionController extends Controller
      */
     public function create(): View
     {
-        Log::info('Displaying login view');
+        Log::info('AuthenticatedSessionController: Displaying login view.');
         return view('auth.login');
     }
 
@@ -28,23 +28,22 @@ class AuthenticatedSessionController extends Controller
      */
     public function store(LoginRequest $request): RedirectResponse
     {
+        Log::info('AuthenticatedSessionController: store method called for user: '.$request->email);
         $this->ensureIsNotRateLimited($request);
 
         try {
-            Log::info('Attempting to authenticate user: '.$request->email);
+            Log::info('AuthenticatedSessionController: Attempting authentication for user: '.$request->email);
             $request->authenticate();
 
             $request->session()->regenerate();
-            Log::info('User authenticated and session regenerated for '.$request->email);
+            Log::info('AuthenticatedSessionController: Session regenerated for user: '.$request->email);
 
             RateLimiter::clear($this->throttleKey($request));
-
-            Log::info('Rate limit cleared for user: '.$request->email);
+            Log::info('AuthenticatedSessionController: Rate limiter cleared for user: '.$request->email);
 
             return redirect()->intended(route('dashboard'));
         } catch (ValidationException $e) {
-            Log::warning('Authentication failed for user: '.$request->email);
-            RateLimiter::hit($this->throttleKey($request), 10800); // Tiempo de bloqueo
+            Log::warning('AuthenticatedSessionController: Authentication failed for user: '.$request->email);
 
             throw $e;
         }
@@ -55,7 +54,7 @@ class AuthenticatedSessionController extends Controller
      */
     public function destroy(Request $request): RedirectResponse
     {
-        Log::info('Destroying session for user');
+        Log::info('AuthenticatedSessionController: Logging out user and destroying session.');
 
         Auth::guard('web')->logout();
 
@@ -67,25 +66,21 @@ class AuthenticatedSessionController extends Controller
 
     /**
      * Ensure the login request is not rate limited.
-     *
-     * @throws \Illuminate\Validation\ValidationException
      */
     protected function ensureIsNotRateLimited(Request $request): void
     {
-        $key = $this->throttleKey($request);
-        Log::info('Checking rate limiting for '.$key);
+        Log::info("AuthenticatedSessionController: Checking rate limit for user: ".$request->email);
 
+        $key = $this->throttleKey($request);
         if (RateLimiter::tooManyAttempts($key, 2)) {
             $seconds = RateLimiter::availableIn($key);
-            Log::info('Limit reached, blocking user '.$key.' for '.$seconds.' seconds');
+            Log::info('AuthenticatedSessionController: User '.$key.' is blocked for '.$seconds.' seconds.');
 
             throw ValidationException::withMessages([
-                'email' => __('auth.throttle', [
-                    'seconds' => $seconds,
-                ]),
-                'message' => 'Has superado el límite de 2 intentos fallidos. La cuenta está bloqueada temporalmente por 10800 segundos.'
+                'message' => __('auth.throttle', ['seconds' => $seconds]),
             ]);
         }
+        Log::info("AuthenticatedSessionController: User has not exceeded rate limit.");
     }
 
     /**
@@ -93,6 +88,7 @@ class AuthenticatedSessionController extends Controller
      */
     protected function throttleKey(Request $request): string
     {
+        Log::info("AuthenticatedSessionController: Generating throttle key for user: ".$request->email);
         return strtolower($request->input('email')).'|'.$request->ip();
     }
 }

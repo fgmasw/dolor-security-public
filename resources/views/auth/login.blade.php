@@ -1,5 +1,6 @@
+<!-- resources/views/auth/login.blade.php -->
+
 <x-guest-layout>
-    <!-- Estado de la sesión -->
     <x-auth-session-status class="mb-4" :status="session('status')" />
 
     <form method="POST" action="{{ route('login') }}">
@@ -18,6 +19,11 @@
                 autofocus 
                 autocomplete="username" 
             />
+            @if ($errors->has('email'))
+                <div class="mt-2 text-red-600">
+                    {{ $errors->first('email') }}
+                </div>
+            @endif
         </div>
 
         <!-- Contraseña -->
@@ -31,34 +37,22 @@
                 required 
                 autocomplete="current-password" 
             />
+            @if ($errors->has('password'))
+                <div class="mt-2 text-red-600">
+                    {{ $errors->first('password') }}
+                </div>
+            @endif
         </div>
 
-        <!-- Mensaje de error genérico -->
-        @if ($errors->any())
+        <!-- Mostrar el mensaje general de error (bloqueo o intentos fallidos) -->
+        @if ($errors->has('message'))
             <div class="mt-4 text-red-600">
-                {{ __('Credenciales no válidas') }}
+                {{ $errors->first('message') }}
             </div>
         @endif
 
-        <!-- Recuérdame -->
-        <div class="block mt-4">
-            <label for="remember_me" class="inline-flex items-center">
-                <input id="remember_me" 
-                    type="checkbox" 
-                    class="rounded border-gray-300 text-indigo-600 shadow-sm focus:ring-indigo-500" 
-                    name="remember">
-                <span class="ms-2 text-sm text-gray-600">{{ __('Recuérdame') }}</span>
-            </label>
-        </div>
-
         <div class="flex items-center justify-end mt-4">
-            @if (Route::has('password.request'))
-                <a class="underline text-sm text-gray-600 hover:text-gray-900 rounded-md focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500" href="{{ route('password.request') }}">
-                    {{ __('¿Olvidaste tu contraseña?') }}
-                </a>
-            @endif
-
-            <x-primary-button class="ms-3">
+            <x-primary-button class="ml-3">
                 {{ __('Iniciar sesión') }}
             </x-primary-button>
         </div>
