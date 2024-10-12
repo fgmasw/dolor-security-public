@@ -5,7 +5,6 @@ namespace App\Http\Requests\Auth;
 use Illuminate\Auth\Events\Lockout;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
@@ -17,7 +16,6 @@ class LoginRequest extends FormRequest
      */
     public function authorize(): bool
     {
-        Log::info("LoginRequest: authorize method called.");
         return true;
     }
 
@@ -26,7 +24,6 @@ class LoginRequest extends FormRequest
      */
     public function rules(): array
     {
-        Log::info("LoginRequest: Setting validation rules for email and password.");
         return [
             'email' => ['required', 'string', 'email'],
             'password' => ['required', 'string'],
@@ -38,34 +35,25 @@ class LoginRequest extends FormRequest
      */
     public function authenticate(): void
     {
-        Log::info("LoginRequest: authenticate method called for user: ".$this->input('email'));
         $this->ensureIsNotRateLimited();
 
         if (!Auth::attempt($this->only('email', 'password'), $this->boolean('remember'))) {
-            Log::warning("LoginRequest: Authentication failed for user: ".$this->input('email'));
-
             RateLimiter::hit($this->throttleKey(), 10800);
-            Log::info('LoginRequest: Rate limiter hit for user: '.$this->input('email'));
 
             $attemptsLeft = 2 - RateLimiter::attempts($this->throttleKey());
-            Log::info('LoginRequest: Number of attempts left for user: '.$attemptsLeft);
 
             if ($attemptsLeft > 0) {
-                Log::info("LoginRequest: Throwing validation warning with {$attemptsLeft} attempt(s) left.");
                 throw ValidationException::withMessages([
                     'email' => __('auth.failed_with_attempts', ['attempts' => $attemptsLeft]),
                 ]);
             }
 
-            Log::info("LoginRequest: No attempts left. Blocking user: ".$this->input('email'));
             throw ValidationException::withMessages([
                 'message' => __('auth.throttle', ['seconds' => 10800]),
             ]);
         }
 
-        Log::info("LoginRequest: Authentication successful for user: ".$this->input('email'));
         RateLimiter::clear($this->throttleKey());
-        Log::info('LoginRequest: Rate limiter cleared for user: '.$this->input('email'));
     }
 
     /**
@@ -73,13 +61,10 @@ class LoginRequest extends FormRequest
      */
     public function ensureIsNotRateLimited(): void
     {
-        Log::info("LoginRequest: ensureIsNotRateLimited method called.");
         $key = $this->throttleKey();
-        Log::info('LoginRequest: Checking rate limiting for key: '.$key);
 
         if (RateLimiter::tooManyAttempts($key, 2)) {
             $seconds = RateLimiter::availableIn($key);
-            Log::info('LoginRequest: User '.$key.' blocked for '.$seconds.' seconds.');
 
             event(new Lockout($this));
 
@@ -87,7 +72,6 @@ class LoginRequest extends FormRequest
                 'message' => __('auth.throttle', ['seconds' => $seconds]),
             ]);
         }
-        Log::info("LoginRequest: User has not exceeded the rate limit.");
     }
 
     /**
@@ -95,7 +79,6 @@ class LoginRequest extends FormRequest
      */
     public function throttleKey(): string
     {
-        Log::info("LoginRequest: throttleKey method called.");
         return Str::lower($this->input('email')).'|'.$this->ip();
     }
 }
