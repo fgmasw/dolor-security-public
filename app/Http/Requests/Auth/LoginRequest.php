@@ -5,6 +5,7 @@ namespace App\Http\Requests\Auth;
 use Illuminate\Auth\Events\Lockout;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
@@ -41,14 +42,18 @@ class LoginRequest extends FormRequest
     {
         $this->ensureIsNotRateLimited();
 
-        if (! Auth::attempt($this->only('email', 'password'), $this->boolean('remember'))) {
-            RateLimiter::hit($this->throttleKey());
+        Log::info('Attempting to authenticate '.$this->input('email'));
+        
+        if (!Auth::attempt($this->only('email', 'password'), $this->boolean('remember'))) {
+            Log::warning('Login attempt failed for user: '.$this->input('email'));
+            RateLimiter::hit($this->throttleKey(), 10800); // Tiempo de bloqueo
 
             throw ValidationException::withMessages([
-                'email' => trans('auth.failed'),
+                'email' => __('Credenciales no válidas'),
             ]);
         }
 
+        Log::info('Login successful for user: '.$this->input('email'));
         RateLimiter::clear($this->throttleKey());
     }
 
@@ -59,20 +64,20 @@ class LoginRequest extends FormRequest
      */
     public function ensureIsNotRateLimited(): void
     {
-        if (! RateLimiter::tooManyAttempts($this->throttleKey(), 5)) {
-            return;
+        $key = $this->throttleKey();
+        Log::info('Checking rate limiting for '.$key);
+
+        if (RateLimiter::tooManyAttempts($key, 2)) {
+            $seconds = RateLimiter::availableIn($key);
+            Log::info('Limit reached, blocking user '.$key.' for '.$seconds.' seconds');
+
+            throw ValidationException::withMessages([
+                'email' => __('auth.throttle', [ // Tiempo bloqueado en segundos
+                    'seconds' => $seconds,
+                ]),
+                'message' => 'Has superado el límite de 2 intentos fallidos. La cuenta está bloqueada por 10800 segundos.',
+            ]);
         }
-
-        event(new Lockout($this));
-
-        $seconds = RateLimiter::availableIn($this->throttleKey());
-
-        throw ValidationException::withMessages([
-            'email' => trans('auth.throttle', [
-                'seconds' => $seconds,
-                'minutes' => ceil($seconds / 60),
-            ]),
-        ]);
     }
 
     /**
@@ -80,6 +85,6 @@ class LoginRequest extends FormRequest
      */
     public function throttleKey(): string
     {
-        return Str::transliterate(Str::lower($this->string('email')).'|'.$this->ip());
+        return Str::transliterate(Str::lower($this->input('email')).'|'.$this->ip());
     }
 }

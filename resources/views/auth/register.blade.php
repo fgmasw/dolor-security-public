@@ -5,7 +5,7 @@
         <!-- Nombre -->
         <div>
             <x-input-label for="name" :value="__('Nombre')" />
-            <x-text-input id="name" class="block mt-1 w-full" 
+            <x-text-input id="name" class="block mt-1 w-full @error('name') border-red-500 @enderror" 
                           type="text" 
                           name="name" 
                           :value="old('name')" 
@@ -22,7 +22,7 @@
         <!-- Apellidos -->
         <div class="mt-4">
             <x-input-label for="apellidos" :value="__('Apellidos')" />
-            <x-text-input id="apellidos" class="block mt-1 w-full" 
+            <x-text-input id="apellidos" class="block mt-1 w-full @error('apellidos') border-red-500 @enderror" 
                           type="text" 
                           name="apellidos" 
                           :value="old('apellidos')" 
@@ -38,7 +38,7 @@
         <!-- DNI -->
         <div class="mt-4">
             <x-input-label for="dni" :value="__('DNI')" />
-            <x-text-input id="dni" class="block mt-1 w-full" 
+            <x-text-input id="dni" class="block mt-1 w-full @error('dni') border-red-500 @enderror" 
                           type="text" 
                           name="dni" 
                           :value="old('dni')" 
@@ -52,7 +52,7 @@
         <!-- Dirección de correo electrónico -->
         <div class="mt-4">
             <x-input-label for="email" :value="__('Correo electrónico')" />
-            <x-text-input id="email" class="block mt-1 w-full" 
+            <x-text-input id="email" class="block mt-1 w-full @error('email') border-red-500 @enderror" 
                           type="email" 
                           name="email" 
                           :value="old('email')" 
@@ -64,7 +64,7 @@
         <!-- Contraseña -->
         <div class="mt-4">
             <x-input-label for="password" :value="__('Contraseña')" />
-            <x-text-input id="password" class="block mt-1 w-full"
+            <x-text-input id="password" class="block mt-1 w-full @error('password') border-red-500 @enderror"
                           type="password"
                           name="password"
                           required 
@@ -78,7 +78,7 @@
         <!-- Confirmar Contraseña -->
         <div class="mt-4">
             <x-input-label for="password_confirmation" :value="__('Confirmar Contraseña')" />
-            <x-text-input id="password_confirmation" class="block mt-1 w-full"
+            <x-text-input id="password_confirmation" class="block mt-1 w-full @error('password_confirmation') border-red-500 @enderror"
                           type="password"
                           name="password_confirmation" 
                           required 
@@ -89,7 +89,7 @@
         <!-- Teléfono -->
         <div class="mt-4">
             <x-input-label for="telefono" :value="__('Teléfono')" />
-            <x-text-input id="telefono" class="block mt-1 w-full" 
+            <x-text-input id="telefono" class="block mt-1 w-full @error('telefono') border-red-500 @enderror" 
                           type="tel" 
                           name="telefono" 
                           :value="old('telefono')" 
@@ -102,10 +102,10 @@
         <!-- País -->
         <div class="mt-4">
             <x-input-label for="pais" :value="__('País')" />
-            <select id="pais" name="pais" class="block mt-1 w-full border-gray-300 focus:border-indigo-500 focus:ring-indigo-500 rounded-md shadow-sm">
+            <select id="pais" name="pais" class="block mt-1 w-full border-gray-300 focus:border-indigo-500 focus:ring-indigo-500 rounded-md shadow-sm @error('pais') border-red-500 @enderror">
                 <option value="">{{ __('Seleccionar país') }}</option>
-                <option value="ES">{{ __('España') }}</option>
-                <option value="US">{{ __('Estados Unidos') }}</option>
+                <option value="ES" {{ old('pais') == 'ES' ? 'selected' : '' }}>{{ __('España') }}</option>
+                <option value="US" {{ old('pais') == 'US' ? 'selected' : '' }}>{{ __('Estados Unidos') }}</option>
                 <option value="AR">{{ __('Argentina') }}</option>
                 <option value="BO">{{ __('Bolivia') }}</option>
                 <option value="BR">{{ __('Brasil') }}</option>
@@ -125,7 +125,7 @@
                 <option value="PE">{{ __('Perú') }}</option>
                 <option value="PR">{{ __('Puerto Rico') }}</option>
                 <option value="UY">{{ __('Uruguay') }}</option>
-                <option value="VE">{{ __('Venezuela') }}</option>       
+                <option value="VE">{{ __('Venezuela') }}</option>
             </select>
             <x-input-error :messages="$errors->get('pais')" class="mt-2" />
         </div>
@@ -133,7 +133,7 @@
         <!-- Sobre ti -->
         <div class="mt-4">
             <x-input-label for="sobre_ti" :value="__('Sobre ti (Descripción personal)')" />
-            <textarea id="sobre_ti" class="block mt-1 w-full" 
+            <textarea id="sobre_ti" class="block mt-1 w-full @error('sobre_ti') border-red-500 @enderror" 
                       name="sobre_ti" 
                       rows="3" 
                       minlength="20" 
