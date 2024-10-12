@@ -2,7 +2,7 @@
 
 # Define variables
 PROJECT_DIR="/home/administrator/dolor-security"
-REMOTE_REPO_URL="git@github.com:fgmasw/dolor-security-private.git"
+REMOTE_REPO_URL="git@github.com:fgmasw/dolor-security-public.git"
 COMMIT_MESSAGE="Update with changes $(date +'%Y-%m-%d %H:%M')"
 
 # Prompt the user to save all changes in the IDE
