@@ -17,7 +17,7 @@ class UserSeeder extends Seeder
     {
         User::create([
             'name' => 'Juan',
-            'apellidos' => 'Pérez Gómez',
+            'apellidos' => 'Paco Gómez',
             'dni' => '12345678L', // Formato español de DNI
             'email' => 'seguridadweb@campusviu.es',
             'password' => Hash::make('S3gur1d4d?W3b'),
