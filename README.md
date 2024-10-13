@@ -20,6 +20,3 @@ Este proyecto es parte de la asignatura de **Seguridad Web** del curso 2024-2025
 
 ## Despliegue
 El proyecto debe ser desplegado en un servidor virtualizado con **Ubuntu** y configurado usando **Apache** o mediante el servidor de desarrollo de Laravel. Además, se debe configurar el firewall para restringir el acceso a ciertos puertos.
-
-## Evaluación
-Este proyecto forma parte de la evaluación de la asignatura y tiene un peso del 30% en la calificación final. Se requiere la entrega del código fuente en un repositorio público de GitHub y una memoria explicativa de entre 5 y 10 páginas.
